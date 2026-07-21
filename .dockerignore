@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+.wwebjs_auth
+data
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.github
+PLAN.md
