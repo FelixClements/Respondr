@@ -67,9 +67,16 @@ By securely mirroring your active conversation queue, the engine checks your cha
    ```
    Edit `.env` and set at least the notification settings you want to use.
 
-3. **Build and run:**
+3. **Pull and run the pre-built image:**
    ```bash
-   docker compose up --build
+   docker compose pull
+   docker compose up -d
+   ```
+
+   To build the image locally instead, run:
+   ```bash
+   docker build -t ghcr.io/felixclements/respondr:latest .
+   docker compose up -d
    ```
 
 4. **Open the dashboard:**
