@@ -1,6 +1,6 @@
 services:
   respondr:
-    build: .
+    image: ghcr.io/felixclements/respondr:latest
     container_name: respondr
     ports:
       - "9595:9595"
