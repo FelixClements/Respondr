@@ -36,7 +36,7 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 - [x] Set Puppeteer launch args for Docker (`--no-sandbox`, `--disable-setuid-sandbox`, etc.)
 - [x] Write `docker-compose.yml` exposing port `9595` and mounting `data/` and `.wwebjs_auth/` volumes
 - [x] Add a healthcheck to the Dockerfile or docker-compose service
-- [ ] Verify the container builds with `docker compose build`
+- [x] Verify the container builds with `docker compose build`
 
 **Acceptance:** `docker compose build` completes and the image starts without immediate crash.
 
