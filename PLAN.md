@@ -62,12 +62,12 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ## Phase 4 — WhatsApp Client Module
 
-- [ ] Create `src/whatsapp/client.js` wrapping `whatsapp-web.js` `Client` with `LocalAuth`
-- [ ] Emit a QR code data URL on the `qr` event using `qrcode`
-- [ ] Track ready/disconnected/auth-failure states
-- [ ] Add `getRecentChats(limit)` that returns an array of `{ id, name, isGroup, isArchived, isMuted, lastMessage: { fromMe, timestamp } }`
-- [ ] Skip group chats, archived chats, and muted chats inside the client wrapper or return flags so the caller can filter
-- [ ] Add graceful shutdown handling (`client.destroy()` on SIGTERM)
+- [x] Create `src/whatsapp/client.js` wrapping `whatsapp-web.js` `Client` with `LocalAuth`
+- [x] Emit a QR code data URL on the `qr` event using `qrcode`
+- [x] Track ready/disconnected/auth-failure states
+- [x] Add `getRecentChats(limit)` that returns an array of `{ id, name, isGroup, isArchived, isMuted, lastMessage: { fromMe, timestamp } }`
+- [x] Skip group chats, archived chats, and muted chats inside the client wrapper or return flags so the caller can filter
+- [x] Add graceful shutdown handling (`client.destroy()` on SIGTERM)
 
 **Acceptance:** Container starts, shows a QR code, and after linking, `getRecentChats(5)` returns real chat data.
 
