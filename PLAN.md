@@ -44,17 +44,17 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ## Phase 3 — Database & Persistence
 
-- [ ] Create `src/db/index.js` to open/initialize SQLite
-- [ ] Create `data/` directory automatically if it does not exist
-- [ ] Design schema in `src/db/schema.sql`:
+- [x] Create `src/db/index.js` to open/initialize SQLite
+- [x] Create `data/` directory automatically if it does not exist
+- [x] Design schema in `src/db/schema.sql`:
   - `settings(key TEXT PRIMARY KEY, value TEXT)`
   - `ignored_chats(id TEXT PRIMARY KEY, name TEXT, ignored_at INTEGER)`
   - `reminders(id INTEGER PRIMARY KEY, chat_id TEXT, chat_name TEXT, sent_at INTEGER)`
   - `scan_logs(id INTEGER PRIMARY KEY, run_at INTEGER, chats_checked INTEGER, reminders_sent INTEGER, error TEXT)`
-- [ ] Add `src/db/settings.js` with get/set helpers for settings
-- [ ] Add `src/db/ignored.js` with add/remove/list helpers
-- [ ] Add `src/db/history.js` with log-reminder and log-scan helpers
-- [ ] Seed default settings: interval = 30 minutes, chat_limit = 50, threshold_hours = 3
+- [x] Add `src/db/settings.js` with get/set helpers for settings
+- [x] Add `src/db/ignored.js` with add/remove/list helpers
+- [x] Add `src/db/history.js` with log-reminder and log-scan helpers
+- [x] Seed default settings: interval = 30 minutes, chat_limit = 50, threshold_hours = 3
 
 **Acceptance:** Running the app creates `data/respondr.db` and settings can be read/written.
 
