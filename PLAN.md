@@ -7,8 +7,8 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 ## Configuration & Defaults
 
 - **Runtime:** Docker (`node:22-slim` base image)
-- **Web framework:** Express on port `9595`
-- **Frontend:** EJS templates + vanilla JS, no auth for now
+- **Web framework:** Hono + `@hono/node-server` on port `9595`
+- **Frontend:** EJS templates rendered manually + vanilla JS; optional Hono `basicAuth`
 - **Persistence:** SQLite in a mounted `data/` volume
 - **WhatsApp session:** `LocalAuth`, stored in `.wwebjs_auth` (mounted volume)
 - **Notifications:** NTFY + Gotify, selectable via `.env`
@@ -19,7 +19,7 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 ## Phase 1 — Project Scaffolding
 
 - [ ] Create `package.json` with scripts: `start`, `dev`, `test`
-- [ ] Install production dependencies: `express`, `ejs`, `whatsapp-web.js`, `node-cron`, `better-sqlite3`, `qrcode`, `axios`, `dotenv`
+- [ ] Install production dependencies: `hono`, `@hono/node-server`, `ejs`, `whatsapp-web.js`, `node-cron`, `better-sqlite3`, `qrcode`, `axios`, `dotenv`
 - [ ] Install dev dependency: `nodemon`
 - [ ] Create `.env.example` with all required and optional variables
 - [ ] Update `.gitignore` to ignore `node_modules/`, `.wwebjs_auth/`, `data/`, `.env`
@@ -75,17 +75,17 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ## Phase 5 — Web Server
 
-- [ ] Create `src/server/index.js` initializing Express
-- [ ] Configure EJS as the view engine with `views/` directory
-- [ ] Serve static files from `public/`
+- [ ] Create `src/server/index.js` initializing a Hono app and serving it with `@hono/node-server`
+- [ ] Add a `render()` helper that uses `ejs.renderFile` and returns HTML via `c.html()`
+- [ ] Serve static files from `public/` using `@hono/node-server/serve-static`
 - [ ] Add routes:
   - `GET /` — dashboard
   - `GET /qr` — QR code page
   - `GET /settings` — settings form
   - `GET /ignored` — ignored chats page
   - `GET /history` — history page
-- [ ] Add JSON body parser middleware
-- [ ] Add a simple global error handler
+- [ ] Add `app.onError` global error handler
+- [ ] Add optional `basicAuth` middleware when `DASHBOARD_USER` and `DASHBOARD_PASSWORD` are set
 
 **Acceptance:** `curl http://localhost:9595/` returns HTML and no 500 errors.
 
@@ -193,7 +193,7 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 │   ├── index.js
 │   ├── server/
 │   │   ├── index.js
-│   │   └── routes.js
+│   │   └── render.js
 │   ├── whatsapp/
 │   │   └── client.js
 │   ├── engine/
