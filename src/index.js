@@ -1,7 +1,11 @@
 require('dotenv').config();
 
-const port = process.env.PORT || 9595;
+const { serve } = require('@hono/node-server');
+const { createApp } = require('./server');
 
-console.log('Respondr is starting...');
-console.log(`Server port: ${port}`);
-console.log('Replace this placeholder with the full app in Phase 10.');
+const port = process.env.PORT || 9595;
+const app = createApp();
+
+serve({ fetch: app.fetch, port }, (info) => {
+  console.log(`Respondr Hono server running on http://localhost:${info.port}`);
+});
