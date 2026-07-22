@@ -1,0 +1,8 @@
+<h2>Link WhatsApp</h2>
+<p>Status: <%= status.status %></p>
+
+<% if (qr) { %>
+  <img src="<%= qr %>" alt="WhatsApp QR code" style="max-width: 300px;">
+<% } else { %>
+  <p>No QR code available. The client may already be linked or not yet started.</p>
+<% } %>

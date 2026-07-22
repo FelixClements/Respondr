@@ -1,0 +1,13 @@
+<h2>Dashboard</h2>
+<p>WhatsApp status: <%= status.status %> (ready: <%= status.isReady %>)</p>
+
+<h3>Recent reminders</h3>
+<% if (recentReminders.length === 0) { %>
+  <p>No reminders yet.</p>
+<% } else { %>
+  <ul>
+    <% recentReminders.forEach(r => { %>
+      <li><%= r.chat_name %> at <%= new Date(r.sent_at).toLocaleString() %></li>
+    <% }) %>
+  </ul>
+<% } %>

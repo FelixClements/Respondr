@@ -1,0 +1,16 @@
+<h2>Ignored Chats</h2>
+
+<% if (ignored.length === 0) { %>
+  <p>No chats are being ignored.</p>
+<% } else { %>
+  <ul>
+    <% ignored.forEach(chat => { %>
+      <li>
+        <%= chat.name %>
+        <form method="POST" action="/ignored/<%= chat.id %>/delete" style="display:inline">
+          <button type="submit">Remove</button>
+        </form>
+      </li>
+    <% }) %>
+  </ul>
+<% } %>

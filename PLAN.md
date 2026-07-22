@@ -75,17 +75,17 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ## Phase 5 — Web Server
 
-- [ ] Create `src/server/index.js` initializing a Hono app and serving it with `@hono/node-server`
-- [ ] Add a `render()` helper that uses `ejs.renderFile` and returns HTML via `c.html()`
-- [ ] Serve static files from `public/` using `@hono/node-server/serve-static`
-- [ ] Add routes:
+- [x] Create `src/server/index.js` initializing a Hono app and serving it with `@hono/node-server`
+- [x] Add a `render()` helper that uses `ejs.renderFile` and returns HTML via `c.html()`
+- [x] Serve static files from `public/` using `@hono/node-server/serve-static`
+- [x] Add routes:
   - `GET /` — dashboard
   - `GET /qr` — QR code page
   - `GET /settings` — settings form
   - `GET /ignored` — ignored chats page
   - `GET /history` — history page
-- [ ] Add `app.onError` global error handler
-- [ ] Add optional `basicAuth` middleware when `DASHBOARD_USER` and `DASHBOARD_PASSWORD` are set
+- [x] Add `app.onError` global error handler
+- [x] Add optional `basicAuth` middleware when `DASHBOARD_USER` and `DASHBOARD_PASSWORD` are set
 
 **Acceptance:** `curl http://localhost:9595/` returns HTML and no 500 errors.
 
@@ -93,13 +93,13 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ## Phase 6 — Dashboard UI
 
-- [ ] Create `views/layout.ejs` base template with navigation
-- [ ] Create `views/index.ejs` showing status, next scan time, and recent reminder count
-- [ ] Create `views/qr.ejs` showing the latest QR code image and connection status
-- [ ] Create `views/settings.ejs` form for `interval_minutes`, `chat_limit`, `threshold_hours`
-- [ ] Create `views/ignored.ejs` listing recent chats with toggle buttons to ignore/unignore
-- [ ] Create `views/history.ejs` paginated table of `reminders` and `scan_logs`
-- [ ] Add `public/style.css` with minimal responsive styling
+- [x] Create `views/layout.ejs` base template with navigation
+- [x] Create `views/index.ejs` showing status, next scan time, and recent reminder count
+- [x] Create `views/qr.ejs` showing the latest QR code image and connection status
+- [x] Create `views/settings.ejs` form for `interval_minutes`, `chat_limit`, `threshold_hours`
+- [x] Create `views/ignored.ejs` listing recent chats with toggle buttons to ignore/unignore
+- [x] Create `views/history.ejs` paginated table of `reminders` and `scan_logs`
+- [x] Add `public/style.css` with minimal responsive styling
 
 **Acceptance:** All pages load, the settings form submits and updates the database, ignored chats toggle works.
 

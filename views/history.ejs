@@ -1,0 +1,23 @@
+<h2>History</h2>
+
+<h3>Reminders</h3>
+<% if (reminders.length === 0) { %>
+  <p>No reminders yet.</p>
+<% } else { %>
+  <ul>
+    <% reminders.forEach(r => { %>
+      <li><%= r.chat_name %> at <%= new Date(r.sent_at).toLocaleString() %></li>
+    <% }) %>
+  </ul>
+<% } %>
+
+<h3>Scan logs</h3>
+<% if (scans.length === 0) { %>
+  <p>No scan logs yet.</p>
+<% } else { %>
+  <ul>
+    <% scans.forEach(s => { %>
+      <li><%= new Date(s.run_at).toLocaleString() %> — checked <%= s.chats_checked %>, sent <%= s.reminders_sent %></li>
+    <% }) %>
+  </ul>
+<% } %>
