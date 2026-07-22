@@ -35,7 +35,7 @@ async function scan(getRecentChats, now = Date.now()) {
     }
   }
 
-  return forgotten;
+  return { totalChecked: chats.length, forgotten };
 }
 
 async function run() {

@@ -137,17 +137,17 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ## Phase 9 — Cron Scheduler & Manual Runner
 
-- [ ] Create `src/engine/runner.js`
-- [ ] Function `runOnce()` that:
+- [x] Create `src/engine/runner.js`
+- [x] Function `runOnce()` that:
   - Loads settings
   - Runs scanner
   - Sends notifications for each forgotten chat
   - Logs each reminder to `reminders`
   - Logs the scan run to `scan_logs`
-- [ ] Create `src/scheduler.js` that starts `node-cron` using `interval_minutes` from settings
-- [ ] Add `POST /api/run` endpoint to trigger a manual scan
-- [ ] Add `GET /api/status` endpoint returning ready state, next scan, last scan result
-- [ ] Dynamically reschedule when `interval_minutes` changes from the dashboard
+- [x] Create `src/scheduler.js` that starts `node-cron` using `interval_minutes` from settings
+- [x] Add `POST /api/run` endpoint to trigger a manual scan
+- [x] Add `GET /api/status` endpoint returning ready state, next scan, last scan result
+- [x] Dynamically reschedule when `interval_minutes` changes from the dashboard
 
 **Acceptance:** Calling `POST /api/run` performs a scan, logs results, and sends notifications. The cron runs automatically at the configured interval.
 

@@ -7,6 +7,8 @@ const { getStatus, getQrDataUrl } = require('../whatsapp/client');
 const settingsDb = require('../db/settings');
 const ignoredDb = require('../db/ignored');
 const historyDb = require('../db/history');
+const scheduler = require('../scheduler');
+const { runOnce } = require('../engine/runner');
 
 function createApp() {
   const app = new Hono();
@@ -50,6 +52,11 @@ function createApp() {
     settingsDb.set('interval_minutes', body.interval_minutes);
     settingsDb.set('chat_limit', body.chat_limit);
     settingsDb.set('threshold_hours', body.threshold_hours);
+    try {
+      scheduler.reschedule();
+    } catch (err) {
+      console.error('Failed to reschedule:', err);
+    }
     return c.redirect('/settings');
   });
 
@@ -75,6 +82,22 @@ function createApp() {
     const reminders = historyDb.getRecentReminders(50);
     const scans = historyDb.getRecentScans(50);
     return c.html(await render('history', { title: 'History', reminders, scans }));
+  });
+
+  app.get('/api/status', async (c) => {
+    const status = getStatus();
+    const settings = settingsDb.getAll();
+    return c.json({
+      status: status.status,
+      isReady: status.isReady,
+      nextScan: scheduler.getNextRunAt(),
+      settings
+    });
+  });
+
+  app.post('/api/run', async (c) => {
+    const result = await runOnce();
+    return c.json(result);
   });
 
   app.onError((err, c) => {
