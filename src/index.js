@@ -5,6 +5,7 @@ const { createApp } = require('./server');
 const { initDb } = require('./db');
 const { startClient } = require('./whatsapp/client');
 const scheduler = require('./scheduler');
+const logger = require('./lib/logger');
 
 async function main() {
   initDb();
@@ -13,19 +14,19 @@ async function main() {
   const app = createApp();
 
   serve({ fetch: app.fetch, port }, (info) => {
-    console.log(`Respondr server running on http://localhost:${info.port}`);
+    logger.info(`Respondr server running on http://localhost:${info.port}`);
   });
 
   try {
     await startClient();
   } catch (err) {
-    console.error('WhatsApp client failed to initialize:', err.message);
+    logger.error(`WhatsApp client failed to initialize: ${err.message}`);
   }
 
   scheduler.start();
 }
 
 main().catch((err) => {
-  console.error('Fatal error:', err);
+  logger.error(`Fatal error: ${err}`);
   process.exit(1);
 });

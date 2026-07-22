@@ -18,6 +18,13 @@ header h1 {
   margin: 0 0 0.5rem;
 }
 
+#status-indicator {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
 nav a {
   margin-right: 1rem;
   text-decoration: none;

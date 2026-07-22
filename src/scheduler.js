@@ -1,6 +1,7 @@
 const { schedule, validate } = require('node-cron');
 const { runOnce } = require('./engine/runner');
 const settingsDb = require('./db/settings');
+const logger = require('./lib/logger');
 
 let task = null;
 
@@ -25,7 +26,7 @@ function start() {
     await runOnce();
   }, { noOverlap: true });
 
-  console.log(`Scheduler started with expression: ${expression}`);
+  logger.info(`Scheduler started with expression: ${expression}`);
 }
 
 function stop() {

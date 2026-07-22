@@ -167,11 +167,11 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ## Phase 11 — Final Polish
 
-- [ ] Add basic logging (requests, scans, errors) using `console` or a lightweight logger
-- [ ] Handle WhatsApp disconnection/reconnection in the UI status page
-- [ ] Add simple input validation on settings form
-- [ ] Add rate limiting or debounce on manual run button
-- [ ] Review for hardcoded secrets and ensure credentials stay in `.env`
+- [x] Add basic logging (requests, scans, errors) using `console` or a lightweight logger
+- [x] Handle WhatsApp disconnection/reconnection in the UI status page
+- [x] Add simple input validation on settings form
+- [x] Add rate limiting or debounce on manual run button
+- [x] Review for hardcoded secrets and ensure credentials stay in `.env`
 
 **Acceptance:** App runs for 24 hours in Docker without crashing and respects all configured settings.
 

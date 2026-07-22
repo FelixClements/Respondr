@@ -2,15 +2,15 @@
 <form method="POST" action="/settings">
   <label>
     Scan interval (minutes)
-    <input type="number" name="interval_minutes" value="<%= settings.interval_minutes %>" required>
+    <input type="number" name="interval_minutes" value="<%= settings.interval_minutes %>" min="1" required>
   </label>
   <label>
     Chat limit
-    <input type="number" name="chat_limit" value="<%= settings.chat_limit %>" required>
+    <input type="number" name="chat_limit" value="<%= settings.chat_limit %>" min="1" required>
   </label>
   <label>
     Response threshold (hours)
-    <input type="number" name="threshold_hours" value="<%= settings.threshold_hours %>" required>
+    <input type="number" name="threshold_hours" value="<%= settings.threshold_hours %>" min="1" required>
   </label>
   <button type="submit">Save</button>
 </form>

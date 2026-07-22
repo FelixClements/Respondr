@@ -9,6 +9,7 @@
 <body>
   <header>
     <h1>Respondr</h1>
+    <span id="status-indicator">checking...</span>
     <nav>
       <a href="/">Dashboard</a>
       <a href="/qr">QR</a>
@@ -20,5 +21,21 @@
   <main>
     <%- body %>
   </main>
+  <script>
+    async function updateStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        const el = document.getElementById('status-indicator');
+        if (el) {
+          el.textContent = `WhatsApp: ${data.status} (ready: ${data.isReady})`;
+        }
+      } catch (e) {
+        // ignore polling errors
+      }
+    }
+    updateStatus();
+    setInterval(updateStatus, 30000);
+  </script>
 </body>
 </html>
