@@ -107,12 +107,12 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ## Phase 7 — Chat Scanner Engine
 
-- [ ] Create `src/engine/scanner.js`
-- [ ] Read `chat_limit` and `threshold_hours` from settings
-- [ ] Call `getRecentChats(chat_limit)` and filter out groups, archived, muted, and ignored chats
-- [ ] For each remaining chat, calculate elapsed time since the last message
-- [ ] If `fromMe === false` and elapsed time > threshold, add to `forgottenChats` list
-- [ ] Return `forgottenChats` with fields: `id`, `name`, `lastMessageAt`, `hoursSince`
+- [x] Create `src/engine/scanner.js`
+- [x] Read `chat_limit` and `threshold_hours` from settings
+- [x] Call `getRecentChats(chat_limit)` and filter out groups, archived, muted, and ignored chats
+- [x] For each remaining chat, calculate elapsed time since the last message
+- [x] If `fromMe === false` and elapsed time > threshold, add to `forgottenChats` list
+- [x] Return `forgottenChats` with fields: `id`, `name`, `lastMessageAt`, `hoursSince`
 
 **Acceptance:** Manual test with a mock chat list returns the correct forgotten chats.
 
