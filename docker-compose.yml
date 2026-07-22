@@ -1,0 +1,13 @@
+services:
+  respondr:
+    build: .
+    container_name: respondr
+    ports:
+      - "9595:9595"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./data:/app/data
+      - ./.wwebjs_auth:/app/.wwebjs_auth
+    restart: unless-stopped

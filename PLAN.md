@@ -18,12 +18,12 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ## Phase 1 — Project Scaffolding
 
-- [ ] Create `package.json` with scripts: `start`, `dev`, `test`
-- [ ] Install production dependencies: `hono`, `@hono/node-server`, `ejs`, `whatsapp-web.js`, `node-cron`, `better-sqlite3`, `qrcode`, `axios`, `dotenv`
-- [ ] Install dev dependency: `nodemon`
-- [ ] Create `.env.example` with all required and optional variables
-- [ ] Update `.gitignore` to ignore `node_modules/`, `.wwebjs_auth/`, `data/`, `.env`
-- [ ] Add `.dockerignore` for `node_modules`, `.wwebjs_auth`, `data`, `.env`
+- [x] Create `package.json` with scripts: `start`, `dev`, `test`
+- [x] Install production dependencies: `hono`, `@hono/node-server`, `ejs`, `whatsapp-web.js`, `node-cron`, `better-sqlite3`, `qrcode`, `axios`, `dotenv`
+- [x] Install dev dependency: `nodemon`
+- [x] Create `.env.example` with all required and optional variables
+- [x] Update `.gitignore` to ignore `node_modules/`, `.wwebjs_auth/`, `data/`, `.env`
+- [x] Add `.dockerignore` for `node_modules`, `.wwebjs_auth`, `data`, `.env`
 
 **Acceptance:** `npm install` succeeds and `npm start` runs without errors (even if it only logs a placeholder).
 
@@ -31,11 +31,11 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ## Phase 2 — Docker Setup
 
-- [ ] Write `Dockerfile` based on `node:22-slim`
-- [ ] Install Chromium and dependencies inside the image
-- [ ] Set Puppeteer launch args for Docker (`--no-sandbox`, `--disable-setuid-sandbox`, etc.)
-- [ ] Write `docker-compose.yml` exposing port `9595` and mounting `data/` and `.wwebjs_auth/` volumes
-- [ ] Add a healthcheck to the Dockerfile or docker-compose service
+- [x] Write `Dockerfile` based on `node:22-slim`
+- [x] Install Chromium and dependencies inside the image
+- [x] Set Puppeteer launch args for Docker (`--no-sandbox`, `--disable-setuid-sandbox`, etc.)
+- [x] Write `docker-compose.yml` exposing port `9595` and mounting `data/` and `.wwebjs_auth/` volumes
+- [x] Add a healthcheck to the Dockerfile or docker-compose service
 - [ ] Verify the container builds with `docker compose build`
 
 **Acceptance:** `docker compose build` completes and the image starts without immediate crash.
