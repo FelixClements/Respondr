@@ -155,10 +155,10 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ## Phase 10 — Integration & Entry Point
 
-- [ ] Create `src/index.js` as the single entry point
-- [ ] Initialize database, start WhatsApp client, start web server, then start scheduler
+- [x] Create `src/index.js` as the single entry point
+- [x] Initialize database, start WhatsApp client, start web server, then start scheduler
 - [ ] Ensure `docker-compose up` brings up the full stack
-- [ ] Add a `README.md` update (or create instructions) for Docker build/run and `.env` setup
+- [x] Add a `README.md` update (or create instructions) for Docker build/run and `.env` setup
 - [ ] Test the complete flow end-to-end in a container
 
 **Acceptance:** `docker compose up` starts the app, the web UI is reachable, WhatsApp links, and a manual scan works.

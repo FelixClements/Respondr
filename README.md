@@ -1,31 +1,33 @@
-# WhatsApp Response Reminder Engine
+# Respondr — WhatsApp Response Reminder Engine
 
-An automated, localized background service designed for individuals who struggle with message management on personal WhatsApp accounts. Rather than utilizing commercial business APIs that strip away personal chat data, this lightweight script serves as a passive monitoring system to ensure you never accidentally leave friends, family, or critical contacts "on read."
+An automated, localized background service designed for individuals who struggle with message management on personal WhatsApp accounts. Rather than utilizing commercial business APIs that strip away personal chat data, this lightweight service passively monitors your recent chats and reminds you when a contact is still waiting for a reply.
 
-By securely mirroring your active conversation queue, the engine checks your chat list at set intervals, calculates the directional context of the last message, and flags conversations where you owe a response.
+By securely mirroring your active conversation queue, the engine checks your chat list at set intervals, evaluates the direction of the last message, and flags conversations where you owe a response.
 
 ---
 
 ## 🚀 Key Features
 
 * **Zero Meta Business Requirements:** Runs natively against a standard personal WhatsApp account with no registration or verification fees.
-* **Directional Context Awareness:** Automatically evaluates if the final message in a thread was sent by the contact (`fromMe === false`).
-* **Custom Elapsed Time Thresholds:** Allows you to define your own rules for what constitutes a forgotten response (e.g., flagging a chat only after 3 hours of silence).
-* **Smart Filter Optimization:** Automatically skips archived threads, muted chats, and chaotic group messages to prevent notification fatigue.
-* **Secure Session Persistence:** Uses localized authentication state data, requiring you to scan the QR onboarding code only once on setup.
-* **Anti-Ban Pattern Mimicry:** Avoids aggressive API scraping by processing only recent active threads at spaced-out intervals to perfectly simulate natural browser-use patterns.
+* **Directional Context Awareness:** Automatically flags conversations where the final message was sent by the contact (`fromMe === false`).
+* **Custom Elapsed Time Thresholds:** Define your own rule for what counts as a forgotten response.
+* **Smart Filter Optimization:** Skips archived threads, muted chats, and group messages to prevent notification fatigue.
+* **Secure Session Persistence:** Uses localized authentication state data, so you only scan the QR code once.
+* **Anti-Ban Pattern Mimicry:** Processes only the top recent active chats at spaced-out intervals to simulate natural usage.
+* **Web Dashboard:** Manage settings, view the QR code, ignored chats, and history from a browser.
+* **Flexible Notifications:** Sends reminders via NTFY and/or Gotify.
 
 ---
 
 ## 🛠️ How It Works
 
 ```text
-[ Active WhatsApp Phone Session ] 
+[ Active WhatsApp Phone Session ]
                 │ (Scanned via LocalAuth QR)
                 ▼
   [ whatsapp-web.js (Puppeteer Instance) ]
                 │
-                ├──► 1. Sweeps top 50 active chats every 30 minutes
+                ├──► 1. Sweeps top active chats on a cron schedule
                 ├──► 2. Evaluates the direction of the latest message
                 │
                 ▼
@@ -34,73 +36,101 @@ By securely mirroring your active conversation queue, the engine checks your cha
                 ├──► Is last message from you? ──► [ SKIP CHAT ]
                 └──► Is last message from contact?
                              │
-                             └──► Age > 3 Hours? ──► [ TRIGGER ALERT ]
+                             └──► Age > threshold? ──► [ TRIGGER ALERT ]
 ```
 
-1. **Authentication:** The project boots up a headless instance of Chromium using browser automation. Upon initial boot, it displays a QR code in the terminal terminal to link your device natively.
-2. **Analysis Loop:** Every 30 minutes, a background cron scheduler sweeps the metadata of your most recent conversation threads.
-3. **Logic Assessment:** The script checks the timestamp of the last message. If the contact spoke last and the threshold is breached, the engine triggers an alert payload.
-4. **Outbound Notification:** It passes the payload to an outbound notification pipeline to alert you without interacting with the WhatsApp platform itself.
+1. **Authentication:** The project boots a headless Chromium instance. On first run, open `/qr` in the dashboard to see the QR code, then scan it with WhatsApp on your phone.
+2. **Analysis Loop:** A background cron scheduler sweeps the metadata of your most recent chats.
+3. **Logic Assessment:** If the contact sent the last message and the configured time threshold is exceeded, the engine triggers an alert.
+4. **Outbound Notification:** The alert is sent via NTFY/Gotify without interacting with WhatsApp itself.
 
 ---
 
-## 🔔 Outbound Push Notifications (To Be Defined)
+## � Prerequisites
 
-The engine is designed to be completely decoupled from your WhatsApp communication channel. When a forgotten chat is detected, the system will not send a message back to the contact; instead, it triggers a private push notification directly to your personal device so you can jump back into the app and reply manually.
-
-```text
-[ Forgotten Chat Detected ] ──► [ Outbound Notification Pipeline ] ──► [ Your Phone / Desktop ]
-```
-
-> ⚠️ **Status: Under Development**  
-> The exact delivery mechanism for these alerts is **currently undefined**. The codebase is structured with a modular `triggerNotification()` handler, allowing you to plug in your preferred notification layer later. Upcoming development phases will explore integrating one of the following free, self-hosted, or lightweight delivery methods:
-> * **NTFY.sh / Gotify:** Sending instant, anonymous push notifications to your mobile phone via an open-source HTTP POST request.
-> * **Telegram Bot API:** Forwarding the reminder details as a private direct message to a personal Telegram channel.
-> * **Pushover / Twilio:** Utilizing structured third-party developer APIs to ping your smartphone.
-> * **Local Desktop Banners:** Triggering native OS notification flags if running the engine on a local machine.
+* **Docker** and **Docker Compose** (recommended)
+* Or **Node.js** v22+ and **npm** for local development
 
 ---
 
-## 📋 Prerequisites
-
-Before running this application, ensure you have the following installed on your machine:
-* **Node.js** (v18.0.0 or higher)
-* **npm** (comes packaged with Node)
-
----
-
-## 🔧 Installation & Setup
+## 🔧 Docker Installation & Setup
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com
-   cd whatsapp-reminder-engine
+   git clone https://github.com/FelixClements/Respondr.git
+   cd Respondr
    ```
 
-2. **Install the dependencies:**
+2. **Configure the environment:**
    ```bash
-   npm install
+   cp .env.example .env
    ```
+   Edit `.env` and set at least the notification settings you want to use.
 
-3. **Run the script:**
+3. **Build and run:**
    ```bash
-   node index.js
+   docker compose up --build
    ```
 
-4. **Link your device:**
-   * A QR code will generate directly inside your terminal window.
-   * Open WhatsApp on your physical mobile phone.
-   * Navigate to **Settings > Linked Devices > Link a Device**.
-   * Scan the terminal QR code. Your session data will save locally in a hidden `.wwebjs_auth` directory so you won't need to re-scan on subsequent restarts.
+4. **Open the dashboard:**
+   * Visit `http://localhost:9595`.
+   * Go to the **QR** page and scan the code with WhatsApp.
+
+The WhatsApp session is persisted in the `.wwebjs_auth` volume, and the SQLite database in the `data` volume.
+
+---
+
+## ⚙️ Environment Variables
+
+| Variable | Description | Default |
+|---|---|---|
+| `NODE_ENV` | Runtime environment | `development` |
+| `PORT` | Web server port | `9595` |
+| `SCAN_INTERVAL_MINUTES` | Minutes between automatic scans | `30` |
+| `CHAT_LIMIT` | Number of recent chats to check | `50` |
+| `THRESHOLD_HOURS` | Hours before a chat is considered forgotten | `3` |
+| `DASHBOARD_USER` | Optional HTTP basic auth username | (none) |
+| `DASHBOARD_PASSWORD` | Optional HTTP basic auth password | (none) |
+| `NTFY_SERVER` | NTFY server URL | `https://ntfy.sh` |
+| `NTFY_TOPIC` | NTFY topic to publish to | (none) |
+| `NTFY_PRIORITY` | NTFY message priority | `3` |
+| `GOTIFY_URL` | Gotify server URL | (none) |
+| `GOTIFY_TOKEN` | Gotify app token | (none) |
+| `GOTIFY_PRIORITY` | Gotify message priority | `5` |
+
+### NTFY.sh setup
+
+1. Install the NTFY app on your phone.
+2. Pick a unique topic name, e.g. `respondr-alerts-yourname`.
+3. Subscribe to that topic in the app.
+4. Set `NTFY_TOPIC=respondr-alerts-yourname` in `.env`.
+
+### Gotify setup
+
+1. Run your own Gotify server (or use an existing one).
+2. Create an app and copy the token.
+3. Set `GOTIFY_URL` and `GOTIFY_TOKEN` in `.env`.
+
+---
+
+## 🖥️ Local Development
+
+```bash
+npm install
+npm start
+```
+
+> Note: local development requires a Chromium installation. The Docker image installs Chromium automatically.
 
 ---
 
 ## ⚠️ Essential Safety Practices
 
 Because WhatsApp explicitly states in its terms that it does not authorize unofficial third-party automation, using this method carries an account suspension risk. To safeguard your personal number:
-* **Never use this script to send automated replies** to people. Only use it as a passive tool to read status parameters.
-* **Keep scanning windows large** (30+ minutes). Sweeping your entire inbox every few seconds flags you immediately to automated anti-bot radar.
-* **Limit the scope.** By focusing strictly on the top 50 recent active chats instead of digging into thousands of archived chats, the script mimics natural human web browsing habits.
+
+* **Never use this script to send automated replies.** Only use it as a passive monitoring tool.
+* **Keep scan intervals large** (30+ minutes). Aggressive polling flags anti-bot systems.
+* **Limit the scope.** Focus on the top recent active chats instead of scraping thousands of threads.
 
 ---
 
