@@ -120,16 +120,16 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ## Phase 8 — Notification Providers
 
-- [ ] Create `src/notifications/index.js` that selects the active provider from `.env`
-- [ ] Implement `src/notifications/ntfy.js`:
+- [x] Create `src/notifications/index.js` that selects the active provider from `.env`
+- [x] Implement `src/notifications/ntfy.js`:
   - POST to `${NTFY_SERVER}/${NTFY_TOPIC}` with title, message, and priority
   - Skip if `NTFY_TOPIC` is empty
-- [ ] Implement `src/notifications/gotify.js`:
+- [x] Implement `src/notifications/gotify.js`:
   - POST to `${GOTIFY_URL}/message?token=${GOTIFY_TOKEN}` with title and message
   - Skip if `GOTIFY_TOKEN` or `GOTIFY_URL` is empty
-- [ ] Format message as `"<Name>: no reply for X hours"`
-- [ ] Support enabling both providers at once
-- [ ] Add `.env.example` placeholders and setup comments for both providers
+- [x] Format message as `"<Name>: no reply for X hours"`
+- [x] Support enabling both providers at once
+- [x] Add `.env.example` placeholders and setup comments for both providers
 
 **Acceptance:** With provider env vars set, `node -e "require('./src/notifications').send(...)"` delivers a test notification. With empty env vars, it logs a skip and does not crash.
 
