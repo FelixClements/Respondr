@@ -28,6 +28,29 @@ fi
 
 mkdir -p data .wwebjs_auth
 
+# Load .env so we can read the configured port and avoid conflicts.
+if [ -f .env ]; then
+  set -a
+  source .env
+  set +a
+fi
+
+PORT=${PORT:-9595}
+
+if command -v lsof >/dev/null 2>&1; then
+  PIDS=$(lsof -ti:$PORT || true)
+  if [ -n "$PIDS" ]; then
+    echo "Port $PORT is already in use. Stopping the existing process..."
+    echo "$PIDS" | xargs -r kill -9
+    sleep 1
+  fi
+fi
+
+# Stop any leftover Chrome processes from previous Respondr runs.
+if command -v pkill >/dev/null 2>&1; then
+  pkill -f "Respondr/\.wwebjs_auth" 2>/dev/null || true
+fi
+
 CHROME_PATH=""
 for path in \
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
@@ -54,6 +77,7 @@ if [ -z "$CHROME_PATH" ] || [ ! -x "$CHROME_PATH" ]; then
 fi
 
 echo "Using Chrome at: $CHROME_PATH"
-echo "Starting Respondr. Open http://localhost:9595 and go to the QR page to link WhatsApp."
+echo "Starting Respondr. Open http://localhost:$PORT and go to the QR page to link WhatsApp."
 echo "Press Ctrl+C to stop."
+
 PUPPETEER_EXECUTABLE_PATH="$CHROME_PATH" node src/index.js
