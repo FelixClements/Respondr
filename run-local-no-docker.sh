@@ -51,20 +51,28 @@ if command -v pkill >/dev/null 2>&1; then
   pkill -f "Respondr/\.wwebjs_auth" 2>/dev/null || true
 fi
 
-CHROME_PATH=""
-for path in \
-  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-  "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary" \
-  "/usr/bin/google-chrome" \
-  "/usr/bin/google-chrome-stable" \
-  "/usr/bin/chromium" \
-  "/usr/bin/chromium-browser"
-do
-  if [ -x "$path" ]; then
-    CHROME_PATH="$path"
-    break
-  fi
-done
+# Allow the user to override the browser path via .env or environment.
+BROWSER_PATH="${PUPPETEER_EXECUTABLE_PATH:-}"
+
+if [ -n "$BROWSER_PATH" ] && [ -x "$BROWSER_PATH" ]; then
+  CHROME_PATH="$BROWSER_PATH"
+else
+  CHROME_PATH=""
+  for path in \
+    "/Applications/Chromium.app/Contents/MacOS/Chromium" \
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+    "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary" \
+    "/usr/bin/chromium" \
+    "/usr/bin/chromium-browser" \
+    "/usr/bin/google-chrome" \
+    "/usr/bin/google-chrome-stable"
+  do
+    if [ -x "$path" ]; then
+      CHROME_PATH="$path"
+      break
+    fi
+  done
+fi
 
 if [ -z "$CHROME_PATH" ]; then
   echo "No Chrome/Chromium installation found. Installing a Puppeteer-managed Chrome build..."
@@ -76,8 +84,18 @@ if [ -z "$CHROME_PATH" ] || [ ! -x "$CHROME_PATH" ]; then
   exit 1
 fi
 
-echo "Using Chrome at: $CHROME_PATH"
+# On macOS, downloaded Chromium/Chrome builds may be quarantined and killed by the OS.
+# Remove the quarantine attribute from the app bundle so it can launch.
+if command -v xattr >/dev/null 2>&1; then
+  APP_DIR=$(dirname "$(dirname "$CHROME_PATH")")
+  if xattr -l "$APP_DIR" 2>/dev/null | grep -q "com.apple.quarantine"; then
+    echo "Removing macOS quarantine attribute from $APP_DIR..."
+    xattr -d com.apple.quarantine "$APP_DIR" 2>/dev/null || true
+  fi
+fi
+
+echo "Using browser at: $CHROME_PATH"
 echo "Starting Respondr. Open http://localhost:$PORT and go to the QR page to link WhatsApp."
 echo "Press Ctrl+C to stop."
 
-PUPPETEER_EXECUTABLE_PATH="$CHROME_PATH" node src/index.js
+PUPPETEER_EXECUTABLE_PATH="$CHROME_PATH" exec node src/index.js
