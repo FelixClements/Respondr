@@ -7,62 +7,64 @@
 <% if (chats.length === 0) { %>
   <p>No chats found. Make sure WhatsApp is linked.</p>
 <% } else { %>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Last message</th>
-        <th>From me</th>
-        <th>Hours since</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% chats.forEach(chat => { %>
+  <div class="table-wrapper">
+    <table>
+      <thead>
         <tr>
-          <td><%= chat.name || chat.id %></td>
-          <td>
-            <% if (chat.lastMessage) { %>
-              <%= new Date(chat.lastMessage.timestampMs).toLocaleString() %>
-            <% } else { %>
-              <em>unknown</em>
-            <% } %>
-          </td>
-          <td>
-            <% if (chat.lastMessage) { %>
-              <%= chat.lastMessage.fromMe ? 'Yes' : 'No' %>
-            <% } else { %>
-              <em>—</em>
-            <% } %>
-          </td>
-          <td>
-            <%= chat.hoursSince !== null ? chat.hoursSince : '—' %>
-          </td>
-          <td>
-            <% if (ignored.has(chat.id)) { %>
-              <span class="badge ignored">ignored</span>
-            <% } else if (chat.needsReply) { %>
-              <span class="badge needs-reply">needs reply</span>
-            <% } else { %>
-              <span class="badge ok">ok</span>
-            <% } %>
-          </td>
-          <td>
-            <% if (ignored.has(chat.id)) { %>
-              <form method="POST" action="/chats/<%= encodeURIComponent(chat.id) %>/unignore" class="inline-form">
-                <input type="hidden" name="name" value="<%= chat.name || chat.id %>">
-                <button type="submit">Unignore</button>
-              </form>
-            <% } else { %>
-              <form method="POST" action="/chats/<%= encodeURIComponent(chat.id) %>/ignore" class="inline-form">
-                <input type="hidden" name="name" value="<%= chat.name || chat.id %>">
-                <button type="submit">Ignore</button>
-              </form>
-            <% } %>
-          </td>
+          <th>Name</th>
+          <th>Last message</th>
+          <th>From me</th>
+          <th>Hours since</th>
+          <th>Status</th>
+          <th>Actions</th>
         </tr>
-      <% }) %>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <% chats.forEach(chat => { %>
+          <tr>
+            <td><%= chat.name || chat.id %></td>
+            <td>
+              <% if (chat.lastMessage) { %>
+                <%= new Date(chat.lastMessage.timestampMs).toLocaleString() %>
+              <% } else { %>
+                <em>unknown</em>
+              <% } %>
+            </td>
+            <td>
+              <% if (chat.lastMessage) { %>
+                <%= chat.lastMessage.fromMe ? 'Yes' : 'No' %>
+              <% } else { %>
+                <em>—</em>
+              <% } %>
+            </td>
+            <td>
+              <%= chat.hoursSince !== null ? chat.hoursSince : '—' %>
+            </td>
+            <td>
+              <% if (ignored.has(chat.id)) { %>
+                <span class="badge ignored">ignored</span>
+              <% } else if (chat.needsReply) { %>
+                <span class="badge needs-reply">needs reply</span>
+              <% } else { %>
+                <span class="badge ok">ok</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (ignored.has(chat.id)) { %>
+                <form method="POST" action="/chats/<%= encodeURIComponent(chat.id) %>/unignore" class="inline-form">
+                  <input type="hidden" name="name" value="<%= chat.name || chat.id %>">
+                  <button type="submit">Unignore</button>
+                </form>
+              <% } else { %>
+                <form method="POST" action="/chats/<%= encodeURIComponent(chat.id) %>/ignore" class="inline-form">
+                  <input type="hidden" name="name" value="<%= chat.name || chat.id %>">
+                  <button type="submit">Ignore</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
 <% } %>
