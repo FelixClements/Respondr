@@ -159,6 +159,30 @@ function createApp() {
     return c.json({ results });
   });
 
+  app.get('/logs', async (c) => {
+    const settings = settingsDb.getAll();
+    const logs = logger.getLogs({ limit: 200 });
+    return page(c, 'logs', { title: 'Logs', logs, settings });
+  });
+
+  app.post('/logs', async (c) => {
+    const body = await c.req.parseBody();
+    const level = String(body.log_level || 'info').toLowerCase();
+    settingsDb.set('log_level', level);
+    logger.setLevel(level);
+    logger.info(`Log level changed to ${level}`);
+    return c.redirect('/logs');
+  });
+
+  app.get('/api/logs', async (c) => {
+    const level = c.req.query('level') || settingsDb.get('log_level');
+    const limit = parseInt(c.req.query('limit'), 10) || 500;
+    return c.json({
+      level: logger.getLevel(),
+      logs: logger.getLogs({ level, limit: Number.isFinite(limit) ? limit : 500 })
+    });
+  });
+
   app.get('/ignored', async (c) => {
     const ignored = ignoredDb.list();
     return page(c, 'ignored', { title: 'Ignored Chats', ignored });

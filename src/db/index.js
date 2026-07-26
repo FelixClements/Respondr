@@ -8,7 +8,8 @@ const DB_PATH = process.env.DB_PATH || path.join(DATA_DIR, 'respondr.db');
 const DEFAULTS = {
   interval_minutes: '30',
   chat_limit: '50',
-  threshold_hours: '3'
+  threshold_hours: '3',
+  log_level: 'info'
 };
 
 let db = null;

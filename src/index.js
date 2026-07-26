@@ -3,6 +3,7 @@ require('dotenv').config();
 const { serve } = require('@hono/node-server');
 const { createApp } = require('./server');
 const { initDb } = require('./db');
+const settingsDb = require('./db/settings');
 const { startClient } = require('./whatsapp/client');
 const scheduler = require('./scheduler');
 const logger = require('./lib/logger');
@@ -10,6 +11,7 @@ const { seedFromEnv: seedNotifications } = require('./notifications/config');
 
 async function main() {
   initDb();
+  logger.setLevel(settingsDb.get('log_level'));
   seedNotifications();
 
   const port = process.env.PORT || 9595;

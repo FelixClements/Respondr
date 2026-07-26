@@ -153,3 +153,51 @@ th {
   background: #e5e7eb;
   color: #374151;
 }
+
+#log-container {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 0.85rem;
+  background: #111;
+  color: #eee;
+  padding: 0.75rem;
+  border-radius: 0.25rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-top: 1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.log-entry {
+  padding: 0.15rem 0;
+  border-bottom: 1px solid #333;
+}
+
+.log-entry:last-child {
+  border-bottom: none;
+}
+
+.log-ts {
+  color: #888;
+  margin-right: 0.5rem;
+}
+
+.log-level {
+  display: inline-block;
+  min-width: 3.5rem;
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.log-level::after {
+  content: ']';
+}
+
+.log-level::before {
+  content: '[';
+}
+
+.log-debug { color: #a78bfa; }
+.log-info { color: #4ade80; }
+.log-warn { color: #facc15; }
+.log-error { color: #f87171; }

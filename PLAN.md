@@ -234,6 +234,20 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ---
 
+## Phase 16 — Logging Page & Log Level
+
+- [x] Rewrite `src/lib/logger.js` to support `debug`, `info`, `warn`, `error` levels and keep the last N log entries in memory
+- [x] Monkey-patch `console.log`/`console.warn`/`console.error` so library output (WhatsApp, Puppeteer, Chrome) is captured
+- [x] Add `log_level` setting and initialize the logger level on startup
+- [x] Add `GET /logs` route and `views/logs.ejs` with a level selector and auto-refreshing log stream
+- [x] Add `GET /api/logs` endpoint for the live log stream
+- [x] Add `POST /logs` to change the active log level
+- [x] Update `views/layout.ejs` navigation and `public/style.css` for the logs page
+
+**Acceptance:** The `/logs` page displays captured logs in real time and lets the user switch between debug/info/warn/error levels; WhatsApp/Puppeteer/Chrome errors appear in the log stream.
+
+---
+
 ## Updated Proposed File Structure
 
 ```
@@ -248,6 +262,8 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 ├── PLAN.md
 ├── src/
 │   ├── index.js
+│   ├── lib/
+│   │   └── logger.js        # updated: level-aware, in-memory ring buffer
 │   ├── server/
 │   │   ├── index.js
 │   │   ├── render.js
@@ -274,6 +290,7 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 │   ├── login.ejs            # new
 │   ├── chats.ejs            # new
 │   ├── notifications.ejs    # new
+│   ├── logs.ejs             # new
 │   ├── qr.ejs
 │   ├── settings.ejs
 │   ├── ignored.ejs
