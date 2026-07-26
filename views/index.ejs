@@ -1,5 +1,21 @@
 <h2>Dashboard</h2>
 <p>WhatsApp status: <%= status.status %> (ready: <%= status.isReady %>)</p>
+<button id="reconnect-btn" type="button">Reconnect WhatsApp</button>
+<pre id="reconnect-result"></pre>
+
+<script>
+  document.getElementById('reconnect-btn').addEventListener('click', async () => {
+    const el = document.getElementById('reconnect-result');
+    el.textContent = 'Reconnecting...';
+    try {
+      const res = await fetch('/api/reconnect', { method: 'POST' });
+      const data = await res.json();
+      el.textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+      el.textContent = 'Error: ' + err.message;
+    }
+  });
+</script>
 
 <h3>Recent reminders</h3>
 <% if (recentReminders.length === 0) { %>

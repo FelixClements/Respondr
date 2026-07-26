@@ -1,11 +1,20 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode');
+const logger = require('../lib/logger');
 
 const AUTH_DIR = process.env.AUTH_DIR || './.wwebjs_auth';
 const PUPPETEER_EXECUTABLE_PATH = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
 const PUPPETEER_ARGS = process.env.PUPPETEER_ARGS
   ? process.env.PUPPETEER_ARGS.split(' ')
-  : ['--no-sandbox', '--disable-setuid-sandbox'];
+  : [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--window-size=1280,720'
+    ];
 
 let qrDataUrl = null;
 let status = 'initializing';
@@ -23,53 +32,80 @@ const client = new Client({
 
 client.on('qr', async (qr) => {
   status = 'awaiting_qr';
+  logger.info('WhatsApp QR code received.');
   try {
     qrDataUrl = await QRCode.toDataURL(qr);
-    console.log('QR code generated; scan it to link WhatsApp.');
+    logger.info('QR code generated; scan it to link WhatsApp.');
   } catch (err) {
-    console.error('Failed to generate QR code:', err);
+    logger.error('Failed to generate QR code:', err);
   }
 });
 
 client.on('authenticated', () => {
   status = 'authenticated';
-  console.log('WhatsApp authenticated.');
+  logger.info('WhatsApp authenticated.');
 });
 
 client.on('auth_failure', (msg) => {
   status = 'auth_failure';
-  console.error('WhatsApp authentication failure:', msg);
+  logger.error('WhatsApp authentication failure:', msg);
 });
 
 client.on('ready', () => {
   isReady = true;
   status = 'ready';
-  console.log('WhatsApp client is ready.');
+  logger.info('WhatsApp client is ready.');
 });
 
 client.on('disconnected', (reason) => {
   isReady = false;
   status = 'disconnected';
-  console.log('WhatsApp client disconnected:', reason);
+  logger.warn('WhatsApp client disconnected:', reason);
+});
+
+client.on('loading_screen', (percent, message) => {
+  logger.debug(`WhatsApp loading screen: ${percent}% ${message}`);
+});
+
+client.on('change_state', (state) => {
+  logger.debug(`WhatsApp state changed: ${state}`);
+});
+
+client.on('change_battery', (batteryInfo) => {
+  logger.debug(`WhatsApp battery info: ${JSON.stringify(batteryInfo)}`);
 });
 
 async function startClient() {
+  logger.info('Initializing WhatsApp client...');
+  logger.debug(`WhatsApp client config: executablePath=${PUPPETEER_EXECUTABLE_PATH || 'default'}, args=[${PUPPETEER_ARGS.join(', ')}], authDir=${AUTH_DIR}`);
   try {
-    return await client.initialize();
+    await client.initialize();
+    logger.info('WhatsApp client initialization finished.');
   } catch (err) {
     launchError = err.message;
     status = 'puppeteer_error';
-    console.error('Failed to initialize WhatsApp client:', err);
+    logger.error('Failed to initialize WhatsApp client:', err);
     throw err;
   }
 }
 
 async function stopClient() {
+  logger.info('Stopping WhatsApp client...');
   try {
     await client.destroy();
+    logger.info('WhatsApp client stopped.');
   } catch (err) {
-    console.error('Error destroying WhatsApp client:', err);
+    logger.error('Error destroying WhatsApp client:', err);
   }
+}
+
+async function restartClient() {
+  logger.info('Restarting WhatsApp client...');
+  await stopClient();
+  launchError = null;
+  status = 'initializing';
+  isReady = false;
+  return startClient();
 }
 
 function getQrDataUrl() {
@@ -81,24 +117,35 @@ function getStatus() {
 }
 
 function getHealth() {
+  logger.debug('getHealth() called');
   let puppeteer = { ok: false, detail: launchError || 'not launched' };
   let chrome = { ok: false, detail: 'not running' };
 
-  if (client.pupBrowser) {
-    const ws = client.pupBrowser.wsEndpoint();
-    puppeteer = { ok: Boolean(ws), detail: ws ? 'connected' : 'no ws endpoint' };
+  try {
+    if (client.pupBrowser) {
+      logger.debug(`client.pupBrowser present: ${typeof client.pupBrowser}`);
+      const ws = client.pupBrowser.wsEndpoint();
+      puppeteer = { ok: Boolean(ws), detail: ws ? 'connected' : 'no ws endpoint' };
+      logger.debug(`puppeteer wsEndpoint: ${ws || 'none'}`);
 
-    const proc = client.pupBrowser.process();
-    if (proc && proc.pid) {
-      try {
-        process.kill(proc.pid, 0);
-        chrome = { ok: true, detail: `pid ${proc.pid}` };
-      } catch (err) {
-        chrome = { ok: false, detail: 'process not responding' };
+      const proc = client.pupBrowser.process();
+      if (proc && proc.pid) {
+        logger.debug(`chrome process pid: ${proc.pid}`);
+        try {
+          process.kill(proc.pid, 0);
+          chrome = { ok: true, detail: `pid ${proc.pid}` };
+        } catch (err) {
+          chrome = { ok: false, detail: 'process not responding' };
+        }
+      } else {
+        chrome = { ok: false, detail: 'no chrome process' };
       }
     } else {
-      chrome = { ok: false, detail: 'no chrome process' };
+      logger.debug('client.pupBrowser is not set');
     }
+  } catch (err) {
+    logger.error('Error computing puppeteer/chrome health:', err);
+    puppeteer = { ok: false, detail: `health check error: ${err.message}` };
   }
 
   let whatsapp = { ok: isReady, detail: status };
@@ -116,7 +163,10 @@ async function getRecentChats(limit = 50) {
     throw new Error('WhatsApp client is not ready');
   }
 
+  logger.debug(`getRecentChats(limit=${limit}) called`);
   const chats = await client.getChats();
+  logger.debug(`getRecentChats got ${chats.length} raw chats`);
+
   const filtered = chats
     .filter((chat) => !chat.isGroup && !chat.archived && !chat.isMuted)
     .sort((a, b) => {
@@ -125,6 +175,8 @@ async function getRecentChats(limit = 50) {
       return bTs - aTs;
     })
     .slice(0, limit);
+
+  logger.debug(`getRecentChats returning ${filtered.length} filtered chats`);
 
   return filtered.map((chat) => ({
     id: chat.id._serialized || chat.id,
@@ -143,13 +195,13 @@ async function getRecentChats(limit = 50) {
 }
 
 process.on('SIGTERM', async () => {
-  console.log('SIGTERM received; shutting down WhatsApp client.');
+  logger.info('SIGTERM received; shutting down WhatsApp client.');
   await stopClient();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-  console.log('SIGINT received; shutting down WhatsApp client.');
+  logger.info('SIGINT received; shutting down WhatsApp client.');
   await stopClient();
   process.exit(0);
 });
@@ -157,6 +209,7 @@ process.on('SIGINT', async () => {
 module.exports = {
   startClient,
   stopClient,
+  restartClient,
   getQrDataUrl,
   getStatus,
   getHealth,

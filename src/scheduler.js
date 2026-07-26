@@ -23,6 +23,7 @@ function start() {
   }
 
   task = schedule(expression, async () => {
+    logger.debug('Scheduled scan triggered');
     await runOnce();
   }, { noOverlap: true });
 

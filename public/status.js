@@ -16,12 +16,27 @@ function renderIcon(container, name, health) {
   existing.title = `${label}: ${health.detail}`;
 }
 
+async function fetchWithTimeout(url, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(id);
+    return res;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
+
 async function updateStatus() {
   const indicator = document.getElementById('status-indicator');
   const iconContainer = document.getElementById('status-icons');
 
+  if (indicator) indicator.textContent = 'Loading...';
+
   try {
-    const res = await fetch('/api/status');
+    const res = await fetchWithTimeout('/api/status');
     if (!res.ok) throw new Error(res.statusText);
     const data = await res.json();
 

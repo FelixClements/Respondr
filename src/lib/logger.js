@@ -10,7 +10,8 @@ const originalConsole = {
   log: console.log,
   info: console.info,
   warn: console.warn,
-  error: console.error
+  error: console.error,
+  debug: console.debug
 };
 
 function parseLevel(level) {
@@ -83,5 +84,6 @@ console.log = capture('info');
 console.info = capture('info');
 console.warn = capture('warn');
 console.error = capture('error');
+console.debug = capture('debug');
 
 module.exports = { setLevel, getLevel, debug, info, warn, error, getLogs };

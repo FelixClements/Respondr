@@ -76,7 +76,9 @@ fi
 
 if [ -z "$CHROME_PATH" ]; then
   echo "No Chrome/Chromium installation found. Installing a Puppeteer-managed Chrome build..."
-  CHROME_PATH=$(npx puppeteer browsers install chrome --format "{{path}}")
+  # Use the same Puppeteer major version as the project to avoid version mismatches.
+  PUPPETEER_VERSION=$(node -e "console.log(require('puppeteer-core/package.json').version.split('.')[0])")
+  CHROME_PATH=$(npx --yes "puppeteer@${PUPPETEER_VERSION}" browsers install chrome --format "{{path}}")
 fi
 
 if [ -z "$CHROME_PATH" ] || [ ! -x "$CHROME_PATH" ]; then

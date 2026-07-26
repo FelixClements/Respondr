@@ -2,7 +2,7 @@ const { Hono } = require('hono');
 const { HTTPException } = require('hono/http-exception');
 const { serveStatic } = require('@hono/node-server/serve-static');
 const { render } = require('./render');
-const { getStatus, getHealth, getQrDataUrl, getRecentChats } = require('../whatsapp/client');
+const { getStatus, getHealth, getQrDataUrl, getRecentChats, restartClient } = require('../whatsapp/client');
 const settingsDb = require('../db/settings');
 const ignoredDb = require('../db/ignored');
 const historyDb = require('../db/history');
@@ -249,7 +249,17 @@ function createApp() {
 
   app.get('/api/status', async (c) => {
     const status = getStatus();
-    const health = getHealth();
+    let health = null;
+    try {
+      health = getHealth();
+    } catch (err) {
+      logger.error(`Health check failed: ${err}`);
+      health = {
+        whatsapp: { ok: false, detail: status.status },
+        puppeteer: { ok: false, detail: err.message },
+        chrome: { ok: false, detail: 'health check failed' }
+      };
+    }
     const settings = settingsDb.getAll();
     return c.json({
       status: status.status,
@@ -268,6 +278,17 @@ function createApp() {
     lastManualRun = now;
     const result = await runOnce();
     return c.json(result);
+  });
+
+  app.post('/api/reconnect', async (c) => {
+    logger.info('Reconnect requested from dashboard');
+    try {
+      await restartClient();
+      return c.json({ ok: true, status: getStatus() });
+    } catch (err) {
+      logger.error(`Reconnect failed: ${err}`);
+      return c.json({ ok: false, error: err.message, status: getStatus() }, 500);
+    }
   });
 
   app.onError((err, c) => {

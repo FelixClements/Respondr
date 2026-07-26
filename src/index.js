@@ -12,6 +12,7 @@ const { seedFromEnv: seedNotifications } = require('./notifications/config');
 async function main() {
   initDb();
   logger.setLevel(settingsDb.get('log_level'));
+  logger.info(`Log level set to ${logger.getLevel()}`);
   seedNotifications();
 
   const port = process.env.PORT || 9595;
@@ -24,7 +25,7 @@ async function main() {
   try {
     await startClient();
   } catch (err) {
-    logger.error(`WhatsApp client failed to initialize: ${err.message}`);
+    logger.debug(`startClient() threw: ${err.message}`);
   }
 
   scheduler.start();
