@@ -9,28 +9,28 @@
 <body>
   <header>
     <h1>Respondr</h1>
-    <div id="status-bar">
-      <div>
-        <span id="status-indicator">checking...</span>
-        <span id="status-icons"></span>
-      </div>
-      <% if (user) { %>
+    <% if (user) { %>
+      <div id="status-bar">
+        <div>
+          <span id="status-indicator">checking...</span>
+          <span id="status-icons"></span>
+        </div>
         <span class="user-info">
           <%= user %>
           <form method="POST" action="/logout" class="inline-form"><button type="submit">Logout</button></form>
         </span>
-      <% } %>
-    </div>
-    <nav>
-      <a href="/">Dashboard</a>
-      <a href="/chats">Chats</a>
-      <a href="/qr">QR</a>
-      <a href="/settings">Settings</a>
-      <a href="/notifications">Notifications</a>
-      <a href="/logs">Logs</a>
-      <a href="/ignored">Ignored</a>
-      <a href="/history">History</a>
-    </nav>
+      </div>
+      <nav>
+        <a href="/">Dashboard</a>
+        <a href="/chats">Chats</a>
+        <a href="/qr">QR</a>
+        <a href="/settings">Settings</a>
+        <a href="/notifications">Notifications</a>
+        <a href="/logs">Logs</a>
+        <a href="/ignored">Ignored</a>
+        <a href="/history">History</a>
+      </nav>
+    <% } %>
   </header>
   <main>
     <%- body %>
