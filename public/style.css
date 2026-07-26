@@ -18,11 +18,55 @@ header h1 {
   margin: 0 0 0.5rem;
 }
 
-#status-indicator {
-  display: block;
+#status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 0.85rem;
   color: #666;
   margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+#status-indicator {
+  display: inline-block;
+  margin-right: 0.75rem;
+}
+
+#status-icons {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.status-icon {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-icon.ok {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-icon.error {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inline-form {
+  display: inline;
+  margin: 0;
 }
 
 nav a {
@@ -40,7 +84,9 @@ form label {
   margin-bottom: 0.75rem;
 }
 
-input[type="number"] {
+input[type="number"],
+input[type="text"],
+input[type="password"] {
   width: 100%;
   padding: 0.4rem;
   margin-top: 0.25rem;
@@ -52,6 +98,13 @@ button {
   cursor: pointer;
 }
 
+.error {
+  color: #b91c1c;
+  background: #fee2e2;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.25rem;
+}
+
 img {
   display: block;
   margin-top: 1rem;
@@ -59,4 +112,44 @@ img {
 
 ul {
   padding-left: 1.25rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+th, td {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  font-weight: 600;
+  border-bottom: 2px solid #ccc;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge.ok {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.badge.needs-reply {
+  background: #fef3c7;
+  color: #a16207;
+}
+
+.badge.ignored {
+  background: #e5e7eb;
+  color: #374151;
 }

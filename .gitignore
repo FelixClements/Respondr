@@ -144,4 +144,5 @@ vite.config.ts.timestamp-*
 
 # Respondr runtime data
 .wwebjs_auth/
+.wwebjs_cache/
 data/

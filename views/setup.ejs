@@ -1,0 +1,14 @@
+<h2>Create account</h2>
+<p>This app supports one account. Set it now to secure the dashboard.</p>
+<form method="POST" action="/setup">
+  <% if (error) { %><p class="error"><%= error %></p><% } %>
+  <label>
+    Username
+    <input type="text" name="username" required autofocus>
+  </label>
+  <label>
+    Password
+    <input type="password" name="password" minlength="6" required>
+  </label>
+  <button type="submit">Create account</button>
+</form>

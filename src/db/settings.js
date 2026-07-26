@@ -11,6 +11,12 @@ function set(key, value) {
   db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(key, String(value));
 }
 
+function has(key) {
+  const db = getDb();
+  const row = db.prepare('SELECT 1 FROM settings WHERE key = ?').get(key);
+  return !!row;
+}
+
 function getAll() {
   const db = getDb();
   const rows = db.prepare('SELECT key, value FROM settings').all();
@@ -21,4 +27,4 @@ function getAll() {
   return result;
 }
 
-module.exports = { get, set, getAll, DEFAULTS };
+module.exports = { get, set, has, getAll, DEFAULTS };

@@ -1,0 +1,59 @@
+<h2>Notifications</h2>
+
+<form method="POST" action="/notifications">
+  <h3>NTFY</h3>
+  <label>
+    <input type="checkbox" name="ntfy_enabled" value="1" <%= settings.ntfy_enabled === '1' ? 'checked' : '' %>>
+    Enable NTFY
+  </label>
+  <label>
+    Server
+    <input type="text" name="ntfy_server" value="<%= settings.ntfy_server || 'https://ntfy.sh' %>">
+  </label>
+  <label>
+    Topic
+    <input type="text" name="ntfy_topic" value="<%= settings.ntfy_topic || '' %>">
+  </label>
+  <label>
+    Priority
+    <input type="number" name="ntfy_priority" value="<%= settings.ntfy_priority || 3 %>" min="1" max="5">
+  </label>
+
+  <h3>Gotify</h3>
+  <label>
+    <input type="checkbox" name="gotify_enabled" value="1" <%= settings.gotify_enabled === '1' ? 'checked' : '' %>>
+    Enable Gotify
+  </label>
+  <label>
+    URL
+    <input type="text" name="gotify_url" value="<%= settings.gotify_url || '' %>">
+  </label>
+  <label>
+    Token
+    <input type="text" name="gotify_token" value="<%= settings.gotify_token || '' %>">
+  </label>
+  <label>
+    Priority
+    <input type="number" name="gotify_priority" value="<%= settings.gotify_priority || 5 %>" min="0" max="10">
+  </label>
+
+  <button type="submit">Save</button>
+</form>
+
+<h3>Test</h3>
+<button id="test-notification" type="button">Send test notification</button>
+<pre id="test-result"></pre>
+
+<script>
+  document.getElementById('test-notification').addEventListener('click', async () => {
+    const el = document.getElementById('test-result');
+    el.textContent = 'Sending...';
+    try {
+      const res = await fetch('/api/test-notification', { method: 'POST' });
+      const data = await res.json();
+      el.textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+      el.textContent = 'Error: ' + err.message;
+    }
+  });
+</script>

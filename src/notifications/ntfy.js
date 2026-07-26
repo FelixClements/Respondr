@@ -1,22 +1,22 @@
 const axios = require('axios');
+const { getNotificationConfig } = require('./config');
 
-async function send({ title, message, priority = 3 }) {
-  const topic = process.env.NTFY_TOPIC;
-  const server = process.env.NTFY_SERVER || 'https://ntfy.sh';
+async function send({ title, message, priority }) {
+  const config = getNotificationConfig().ntfy;
 
-  if (!topic) {
-    console.log('NTFY skipped: NTFY_TOPIC not set');
+  if (!config.enabled || !config.topic) {
+    console.log('NTFY skipped: disabled or topic not set');
     return;
   }
 
-  const url = `${server}/${topic}`;
+  const url = `${config.server}/${config.topic}`;
   await axios.post(url, message, {
     headers: {
       Title: title,
-      Priority: String(priority)
+      Priority: String(priority || config.priority)
     }
   });
-  console.log(`NTFY notification sent to ${topic}`);
+  console.log(`NTFY notification sent to ${config.topic}`);
 }
 
 module.exports = { send };

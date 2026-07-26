@@ -9,11 +9,24 @@
 <body>
   <header>
     <h1>Respondr</h1>
-    <span id="status-indicator">checking...</span>
+    <div id="status-bar">
+      <div>
+        <span id="status-indicator">checking...</span>
+        <span id="status-icons"></span>
+      </div>
+      <% if (user) { %>
+        <span class="user-info">
+          <%= user %>
+          <form method="POST" action="/logout" class="inline-form"><button type="submit">Logout</button></form>
+        </span>
+      <% } %>
+    </div>
     <nav>
       <a href="/">Dashboard</a>
+      <a href="/chats">Chats</a>
       <a href="/qr">QR</a>
       <a href="/settings">Settings</a>
+      <a href="/notifications">Notifications</a>
       <a href="/ignored">Ignored</a>
       <a href="/history">History</a>
     </nav>
@@ -21,21 +34,6 @@
   <main>
     <%- body %>
   </main>
-  <script>
-    async function updateStatus() {
-      try {
-        const res = await fetch('/api/status');
-        const data = await res.json();
-        const el = document.getElementById('status-indicator');
-        if (el) {
-          el.textContent = `WhatsApp: ${data.status} (ready: ${data.isReady})`;
-        }
-      } catch (e) {
-        // ignore polling errors
-      }
-    }
-    updateStatus();
-    setInterval(updateStatus, 30000);
-  </script>
+  <script src="/static/status.js"></script>
 </body>
 </html>

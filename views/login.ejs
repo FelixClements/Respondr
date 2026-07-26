@@ -1,0 +1,13 @@
+<h2>Login</h2>
+<form method="POST" action="/login">
+  <% if (error) { %><p class="error"><%= error %></p><% } %>
+  <label>
+    Username
+    <input type="text" name="username" required autofocus>
+  </label>
+  <label>
+    Password
+    <input type="password" name="password" required>
+  </label>
+  <button type="submit">Login</button>
+</form>

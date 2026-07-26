@@ -10,6 +10,7 @@ const PUPPETEER_ARGS = process.env.PUPPETEER_ARGS
 let qrDataUrl = null;
 let status = 'initializing';
 let isReady = false;
+let launchError = null;
 
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: AUTH_DIR }),
@@ -53,7 +54,14 @@ client.on('disconnected', (reason) => {
 });
 
 async function startClient() {
-  return client.initialize();
+  try {
+    return await client.initialize();
+  } catch (err) {
+    launchError = err.message;
+    status = 'puppeteer_error';
+    console.error('Failed to initialize WhatsApp client:', err);
+    throw err;
+  }
 }
 
 async function stopClient() {
@@ -70,6 +78,37 @@ function getQrDataUrl() {
 
 function getStatus() {
   return { status, isReady };
+}
+
+function getHealth() {
+  let puppeteer = { ok: false, detail: launchError || 'not launched' };
+  let chrome = { ok: false, detail: 'not running' };
+
+  if (client.pupBrowser) {
+    const ws = client.pupBrowser.wsEndpoint();
+    puppeteer = { ok: Boolean(ws), detail: ws ? 'connected' : 'no ws endpoint' };
+
+    const proc = client.pupBrowser.process();
+    if (proc && proc.pid) {
+      try {
+        process.kill(proc.pid, 0);
+        chrome = { ok: true, detail: `pid ${proc.pid}` };
+      } catch (err) {
+        chrome = { ok: false, detail: 'process not responding' };
+      }
+    } else {
+      chrome = { ok: false, detail: 'no chrome process' };
+    }
+  }
+
+  let whatsapp = { ok: isReady, detail: status };
+  if (isReady) {
+    whatsapp = { ok: true, detail: 'connected' };
+  } else if (status === 'puppeteer_error') {
+    whatsapp = { ok: false, detail: 'puppeteer failed to launch' };
+  }
+
+  return { whatsapp, puppeteer, chrome };
 }
 
 async function getRecentChats(limit = 50) {
@@ -120,5 +159,6 @@ module.exports = {
   stopClient,
   getQrDataUrl,
   getStatus,
+  getHealth,
   getRecentChats
 };

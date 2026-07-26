@@ -1,15 +1,17 @@
 const { Hono } = require('hono');
-const { basicAuth } = require('hono/basic-auth');
 const { HTTPException } = require('hono/http-exception');
 const { serveStatic } = require('@hono/node-server/serve-static');
 const { render } = require('./render');
-const { getStatus, getQrDataUrl } = require('../whatsapp/client');
+const { getStatus, getHealth, getQrDataUrl, getRecentChats } = require('../whatsapp/client');
 const settingsDb = require('../db/settings');
 const ignoredDb = require('../db/ignored');
 const historyDb = require('../db/history');
 const scheduler = require('../scheduler');
 const { runOnce } = require('../engine/runner');
 const logger = require('../lib/logger');
+const auth = require('./auth');
+const { sendTest } = require('../notifications');
+const { getCookie } = require('hono/cookie');
 
 const MANUAL_RUN_COOLDOWN_MS = 60 * 1000;
 
@@ -17,38 +19,82 @@ function createApp() {
   const app = new Hono();
   let lastManualRun = 0;
 
-  if (process.env.DASHBOARD_USER && process.env.DASHBOARD_PASSWORD) {
-    app.use('*', basicAuth({
-      username: process.env.DASHBOARD_USER,
-      password: process.env.DASHBOARD_PASSWORD
-    }));
-  }
+  auth.ensureAccountFromEnv();
 
   app.use('/static/*', serveStatic({
     root: './public',
     rewriteRequestPath: (path) => path.replace(/^\/static\//, '')
   }));
 
+  app.use('*', auth.authMiddleware);
+
   app.use('*', async (c, next) => {
     logger.info(`${c.req.method} ${c.req.path}`);
     await next();
   });
 
+  async function page(c, template, data = {}) {
+    return c.html(await render(template, { ...data, user: c.get('user') || null }));
+  }
+
+  app.get('/setup', async (c) => {
+    if (auth.isConfigured()) return c.redirect('/');
+    return page(c, 'setup', { title: 'Create account', error: null });
+  });
+
+  app.post('/setup', async (c) => {
+    if (auth.isConfigured()) return c.redirect('/');
+    const body = await c.req.parseBody();
+    const { username, password } = body;
+    try {
+      auth.configureAccount(username, password);
+      const token = auth.createSession(username);
+      auth.setSessionCookie(c, token);
+      return c.redirect('/');
+    } catch (err) {
+      return page(c, 'setup', { title: 'Create account', error: err.message });
+    }
+  });
+
+  app.get('/login', async (c) => {
+    if (!auth.isConfigured()) return c.redirect('/setup');
+    if (auth.getUserFromCookie(c)) return c.redirect('/');
+    return page(c, 'login', { title: 'Login', error: null });
+  });
+
+  app.post('/login', async (c) => {
+    const body = await c.req.parseBody();
+    const { username, password } = body;
+    if (auth.validateCredentials(username, password)) {
+      const token = auth.createSession(username);
+      auth.setSessionCookie(c, token);
+      return c.redirect('/');
+    }
+    return page(c, 'login', { title: 'Login', error: 'Invalid username or password' });
+  });
+
+  app.post('/logout', async (c) => {
+    const token = getCookie(c, 'session');
+    if (token) auth.destroySession(token);
+    auth.clearSessionCookie(c);
+    return c.redirect('/login');
+  });
+
   app.get('/', async (c) => {
     const status = getStatus();
     const recentReminders = historyDb.getRecentReminders(5);
-    return c.html(await render('index', { title: 'Dashboard', status, recentReminders }));
+    return page(c, 'index', { title: 'Dashboard', status, recentReminders });
   });
 
   app.get('/qr', async (c) => {
     const status = getStatus();
     const qr = getQrDataUrl();
-    return c.html(await render('qr', { title: 'Link WhatsApp', status, qr }));
+    return page(c, 'qr', { title: 'Link WhatsApp', status, qr });
   });
 
   app.get('/settings', async (c) => {
     const settings = settingsDb.getAll();
-    return c.html(await render('settings', { title: 'Settings', settings }));
+    return page(c, 'settings', { title: 'Settings', settings });
   });
 
   app.post('/settings', async (c) => {
@@ -78,9 +124,44 @@ function createApp() {
     return c.redirect('/settings');
   });
 
+  app.get('/notifications', async (c) => {
+    const settings = settingsDb.getAll();
+    return page(c, 'notifications', { title: 'Notifications', settings });
+  });
+
+  app.post('/notifications', async (c) => {
+    const body = await c.req.parseBody();
+
+    function boolValue(name) {
+      return body[name] === '1' ? '1' : '0';
+    }
+
+    function intValue(name, fallback) {
+      const value = parseInt(body[name], 10);
+      return Number.isFinite(value) ? value : fallback;
+    }
+
+    settingsDb.set('ntfy_enabled', boolValue('ntfy_enabled'));
+    settingsDb.set('ntfy_server', String(body.ntfy_server || 'https://ntfy.sh').trim());
+    settingsDb.set('ntfy_topic', String(body.ntfy_topic || '').trim());
+    settingsDb.set('ntfy_priority', String(intValue('ntfy_priority', 3)));
+
+    settingsDb.set('gotify_enabled', boolValue('gotify_enabled'));
+    settingsDb.set('gotify_url', String(body.gotify_url || '').trim());
+    settingsDb.set('gotify_token', String(body.gotify_token || '').trim());
+    settingsDb.set('gotify_priority', String(intValue('gotify_priority', 5)));
+
+    return c.redirect('/notifications');
+  });
+
+  app.post('/api/test-notification', async (c) => {
+    const results = await sendTest('Respondr test', 'This is a test notification from Respondr.');
+    return c.json({ results });
+  });
+
   app.get('/ignored', async (c) => {
     const ignored = ignoredDb.list();
-    return c.html(await render('ignored', { title: 'Ignored Chats', ignored }));
+    return page(c, 'ignored', { title: 'Ignored Chats', ignored });
   });
 
   app.post('/ignored/:id', async (c) => {
@@ -96,18 +177,60 @@ function createApp() {
     return c.redirect('/ignored');
   });
 
+  app.get('/chats', async (c) => {
+    const settings = settingsDb.getAll();
+    const thresholdHours = parseFloat(settings.threshold_hours) || 3;
+    const limit = parseInt(settings.chat_limit, 10) || 50;
+    let chats = [];
+    let error = null;
+
+    try {
+      const raw = await getRecentChats(limit);
+      const now = Date.now();
+      chats = raw.map((chat) => {
+        const lastTs = chat.lastMessage?.timestampMs || 0;
+        const hoursSince = lastTs ? (now - lastTs) / (1000 * 60 * 60) : null;
+        return {
+          ...chat,
+          hoursSince: hoursSince !== null ? Number(hoursSince.toFixed(1)) : null,
+          needsReply: Boolean(chat.lastMessage && !chat.lastMessage.fromMe && hoursSince !== null && hoursSince > thresholdHours)
+        };
+      });
+    } catch (err) {
+      error = err.message;
+    }
+
+    const ignored = new Set(ignoredDb.list().map((i) => i.id));
+    return page(c, 'chats', { title: 'Chats', chats, ignored, error });
+  });
+
+  app.post('/chats/:id/ignore', async (c) => {
+    const id = c.req.param('id');
+    const body = await c.req.parseBody();
+    ignoredDb.add(id, body.name || id);
+    return c.redirect('/chats');
+  });
+
+  app.post('/chats/:id/unignore', async (c) => {
+    const id = c.req.param('id');
+    ignoredDb.remove(id);
+    return c.redirect('/chats');
+  });
+
   app.get('/history', async (c) => {
     const reminders = historyDb.getRecentReminders(50);
     const scans = historyDb.getRecentScans(50);
-    return c.html(await render('history', { title: 'History', reminders, scans }));
+    return page(c, 'history', { title: 'History', reminders, scans });
   });
 
   app.get('/api/status', async (c) => {
     const status = getStatus();
+    const health = getHealth();
     const settings = settingsDb.getAll();
     return c.json({
       status: status.status,
       isReady: status.isReady,
+      health,
       nextScan: scheduler.getNextRunAt(),
       settings
     });

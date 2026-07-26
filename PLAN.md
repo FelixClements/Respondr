@@ -177,7 +177,64 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ---
 
-## Proposed File Structure
+## Phase 12 — Login Page (Single Account)
+
+- [x] Add `src/server/auth.js` with session handling and a single-user auth model
+- [x] Store account in `settings` table as `auth_username` and `auth_password_hash` (only one account allowed)
+- [x] Add `/setup` route for first-run account creation when no account exists
+- [x] Add GET/POST `/login` routes and `views/login.ejs` form
+- [x] Add POST `/logout` route that clears the session
+- [x] Add session middleware (signed cookie or in-memory token) and protect all routes except login/setup/static
+- [x] Hash passwords with Node.js `crypto.scrypt` (prefer built-in to avoid new dependency)
+- [x] Use `DASHBOARD_USER`/`DASHBOARD_PASSWORD` env vars to pre-create the account on first run
+
+**Acceptance:** Only one account can be created; login page blocks unauthenticated users; all dashboard routes require login.
+
+---
+
+## Phase 13 — WhatsApp / Chrome / Puppeteer Status Icons
+
+- [x] Extend `src/whatsapp/client.js` to expose `getHealth()` returning:
+  - `whatsapp`: current status and `isReady`
+  - `puppeteer`: browser object present and WS endpoint reachable
+  - `chrome`: child process PID/running state and launch-error flag
+- [x] Track puppeteer launch errors in `startClient()`
+- [x] Update `GET /api/status` to include the `health` object
+- [x] Add `public/status.js` that polls `/api/status` every 5 seconds and renders three status icons
+- [x] Update `views/layout.ejs` to show the icons with color states (green/red) and tooltips
+
+**Acceptance:** Layout shows real-time status for WhatsApp connection, Chrome process, and Puppeteer; icons update without page reload.
+
+---
+
+## Phase 14 — Checked Chats Page
+
+- [x] Add GET `/chats` route in `src/server/index.js`
+- [x] Call `getRecentChats(settings.chat_limit)` and pass results to `views/chats.ejs`
+- [x] Create `views/chats.ejs` listing chat name, last message time, and whether the last message was `fromMe`
+- [x] Show hours since last message and a "needs reply" indicator based on threshold
+- [x] Add inline ignore/unignore buttons using existing `ignoredDb` helpers
+- [x] Update `views/layout.ejs` navigation to include the Chats link
+
+**Acceptance:** `/chats` loads a list of checked chats with last-sender info; ignore/unignore toggles work and refresh the page.
+
+---
+
+## Phase 15 — Notification Provider Settings UI
+
+- [x] Add notification settings to the `settings` table (`ntfy_*` and `gotify_*` keys) with a `settingsDb.has()` helper
+- [x] Refactor `src/notifications/index.js` and `src/notifications/{ntfy,gotify}.js` to read settings from the database at send time
+- [x] Create `src/notifications/config.js` to resolve active providers and validate required fields
+- [x] Add GET/POST `/notifications` route and `views/notifications.ejs` form to enable/disable and configure each provider
+- [x] Add `POST /api/test-notification` endpoint that sends a test message through active providers
+- [x] Seed notification settings from existing `.env` variables on first run for backward compatibility
+- [x] Update `.env.example` comments to show these values can also be set in the dashboard
+
+**Acceptance:** Notification providers can be enabled and configured from the UI; test notification succeeds; runner uses the stored settings.
+
+---
+
+## Updated Proposed File Structure
 
 ```
 /
@@ -193,7 +250,8 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 │   ├── index.js
 │   ├── server/
 │   │   ├── index.js
-│   │   └── render.js
+│   │   ├── render.js
+│   │   └── auth.js          # new: session/login helpers & middleware
 │   ├── whatsapp/
 │   │   └── client.js
 │   ├── engine/
@@ -202,6 +260,7 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 │   │   └── scheduler.js
 │   ├── notifications/
 │   │   ├── index.js
+│   │   ├── config.js        # new: provider settings resolution
 │   │   ├── ntfy.js
 │   │   └── gotify.js
 │   └── db/
@@ -212,10 +271,14 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 ├── views/
 │   ├── layout.ejs
 │   ├── index.ejs
+│   ├── login.ejs            # new
+│   ├── chats.ejs            # new
+│   ├── notifications.ejs    # new
 │   ├── qr.ejs
 │   ├── settings.ejs
 │   ├── ignored.ejs
 │   └── history.ejs
 └── public/
-    └── style.css
+    ├── style.css
+    └── status.js            # new
 ```

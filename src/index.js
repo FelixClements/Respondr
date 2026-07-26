@@ -6,9 +6,11 @@ const { initDb } = require('./db');
 const { startClient } = require('./whatsapp/client');
 const scheduler = require('./scheduler');
 const logger = require('./lib/logger');
+const { seedFromEnv: seedNotifications } = require('./notifications/config');
 
 async function main() {
   initDb();
+  seedNotifications();
 
   const port = process.env.PORT || 9595;
   const app = createApp();
