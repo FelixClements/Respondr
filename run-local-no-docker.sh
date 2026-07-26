@@ -60,12 +60,10 @@ else
   CHROME_PATH=""
   for path in \
     "/Applications/Chromium.app/Contents/MacOS/Chromium" \
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-    "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary" \
     "/usr/bin/chromium" \
     "/usr/bin/chromium-browser" \
-    "/usr/bin/google-chrome" \
-    "/usr/bin/google-chrome-stable"
+    "/usr/local/bin/chromium" \
+    "/opt/homebrew/bin/chromium"
   do
     if [ -x "$path" ]; then
       CHROME_PATH="$path"
@@ -89,8 +87,8 @@ fi
 # On macOS, downloaded Chromium/Chrome builds may be quarantined and killed by the OS.
 # Remove the quarantine attribute from the app bundle so it can launch.
 if command -v xattr >/dev/null 2>&1; then
-  APP_DIR=$(dirname "$(dirname "$CHROME_PATH")")
-  if xattr -l "$APP_DIR" 2>/dev/null | grep -q "com.apple.quarantine"; then
+  APP_DIR=$(sed -n 's|\(.*/[^/]*\.app\)/.*|\1|p' <<< "$CHROME_PATH")
+  if [ -n "$APP_DIR" ] && xattr -l "$APP_DIR" 2>/dev/null | grep -q "com.apple.quarantine"; then
     echo "Removing macOS quarantine attribute from $APP_DIR..."
     xattr -d com.apple.quarantine "$APP_DIR" 2>/dev/null || true
   fi

@@ -1,9 +1,12 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode');
+const fs = require('fs');
 const logger = require('../lib/logger');
 
 const AUTH_DIR = process.env.AUTH_DIR || './.wwebjs_auth';
-const PUPPETEER_EXECUTABLE_PATH = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
+const DEFAULT_CHROMIUM_PATH = '/Applications/Chromium.app/Contents/MacOS/Chromium';
+const PUPPETEER_EXECUTABLE_PATH = process.env.PUPPETEER_EXECUTABLE_PATH
+  || (fs.existsSync(DEFAULT_CHROMIUM_PATH) ? DEFAULT_CHROMIUM_PATH : undefined);
 const PUPPETEER_ARGS = process.env.PUPPETEER_ARGS
   ? process.env.PUPPETEER_ARGS.split(' ')
   : [
@@ -164,34 +167,67 @@ async function getRecentChats(limit = 50) {
   }
 
   logger.debug(`getRecentChats(limit=${limit}) called`);
-  const chats = await client.getChats();
-  logger.debug(`getRecentChats got ${chats.length} raw chats`);
 
-  const filtered = chats
-    .filter((chat) => !chat.isGroup && !chat.archived && !chat.isMuted)
-    .sort((a, b) => {
-      const aTs = a.lastMessage?.timestamp || a.timestamp || 0;
-      const bTs = b.lastMessage?.timestamp || b.timestamp || 0;
-      return bTs - aTs;
-    })
-    .slice(0, limit);
+  const chats = await client.pupPage.evaluate(async (chatLimit) => {
+    const chatCollection = window.require('WAWebCollections').Chat;
+    const all = chatCollection._models || [];
+    const sorted = all.slice().sort((a, b) => (b.t || 0) - (a.t || 0));
+    const result = [];
 
-  logger.debug(`getRecentChats returning ${filtered.length} filtered chats`);
+    for (const chat of sorted) {
+      if (result.length >= chatLimit) break;
 
-  return filtered.map((chat) => ({
-    id: chat.id._serialized || chat.id,
-    name: chat.name,
-    isGroup: chat.isGroup,
-    isArchived: chat.archived,
-    isMuted: chat.isMuted,
-    lastMessage: chat.lastMessage
-      ? {
-          fromMe: chat.lastMessage.fromMe,
-          timestamp: chat.lastMessage.timestamp,
-          timestampMs: chat.lastMessage.timestamp * 1000
+      const serialized = chat.serialize ? chat.serialize() : {};
+      const isGroup = !!chat.groupMetadata;
+      const isArchived = Boolean(serialized.archive);
+      const isMuted = chat.mute && chat.mute.expiration !== 0;
+
+      if (isGroup || isArchived || isMuted) continue;
+
+      const targetTs = chat.t || 0;
+      let lastMessage = null;
+      const msgs = chat.msgs ? chat.msgs._models : [];
+
+      if (msgs.length) {
+        const match = msgs.find((m) => m.t === targetTs);
+        const last = match || msgs.reduce((a, b) => (b.t > a.t ? b : a), msgs[0]);
+        if (last) {
+          lastMessage = {
+            fromMe: last.id.fromMe,
+            timestamp: last.t,
+            timestampMs: last.t * 1000
+          };
         }
-      : null
-  }));
+      }
+
+      if (!lastMessage && chat.lastReceivedKey) {
+        try {
+          const msg = window.require('WAWebCollections').Msg.get(chat.lastReceivedKey.toString());
+          if (msg) {
+            lastMessage = {
+              fromMe: msg.id.fromMe,
+              timestamp: msg.t,
+              timestampMs: msg.t * 1000
+            };
+          }
+        } catch (e) {}
+      }
+
+      result.push({
+        id: chat.id._serialized,
+        name: chat.formattedTitle,
+        isGroup,
+        isArchived,
+        isMuted,
+        lastMessage
+      });
+    }
+
+    return result;
+  }, limit);
+
+  logger.debug(`getRecentChats returning ${chats.length} chats`);
+  return chats;
 }
 
 process.on('SIGTERM', async () => {
