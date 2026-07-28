@@ -9,6 +9,17 @@ CREATE TABLE IF NOT EXISTS ignored_chats (
   ignored_at INTEGER
 );
 
+CREATE TABLE IF NOT EXISTS chat_state (
+  chat_id TEXT PRIMARY KEY,
+  name TEXT,
+  state TEXT NOT NULL DEFAULT 'ignored',
+  until INTEGER,
+  created_at INTEGER
+);
+
+INSERT OR IGNORE INTO chat_state (chat_id, name, state, created_at)
+SELECT id, name, 'ignored', ignored_at FROM ignored_chats;
+
 CREATE TABLE IF NOT EXISTS reminders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   chat_id TEXT,

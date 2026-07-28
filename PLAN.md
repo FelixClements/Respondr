@@ -262,6 +262,35 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ---
 
+## Phase 18 — Reactions Count as Replies
+
+- [x] Inspect WhatsApp Web internal `msg.reactions` model and confirm how to identify the current user as the reaction sender
+- [x] Add a helper inside `src/whatsapp/client.js` (browser-side evaluation) to detect `hasReactionFromMe` on the last incoming message
+- [x] Extend `getRecentChats()` so each `lastMessage` includes `hasReactionFromMe`
+- [x] Update `src/engine/scanner.js` to skip chats where `lastMessage.hasReactionFromMe` is true
+- [x] Update the `needsReply` calculation in `src/server/index.js` `/chats` route to include `hasReactionFromMe`
+- [ ] Manually verify: reacting to the last message with an emoji stops the chat from being flagged
+
+**Acceptance:** A chat whose last incoming message has a reaction from the current user is treated as already replied and does not trigger a reminder.
+
+---
+
+## Phase 19 — Done State for Chats
+
+- [x] Add a `chat_state` table to `src/db/schema.sql` (or extend `ignored_chats`) with `state`, `until`, and `created_at`
+- [x] Migrate existing `ignored_chats` rows into `chat_state` with `state = 'ignored'`
+- [x] Create `src/db/chatState.js` helpers for `markIgnored`, `markDone`, `unmark`, `isDone`, `list`, and reset logic
+- [x] Update `src/engine/scanner.js` to skip `done` chats unless a newer incoming message exists after `done_at`
+- [x] Clear `done` state automatically when the other person sends a new message after the mark
+- [x] Add `POST /chats/:id/done` and `POST /chats/:id/undone` routes in `src/server/index.js`
+- [x] Update `views/chats.ejs` with Done / Undo / Ignore action buttons and state badges
+- [x] Add an optional safety-net `until` expiration so Done never hides a chat forever
+- [ ] Manually verify: marking a chat Done suppresses reminders until a new incoming message arrives
+
+**Acceptance:** Done chats stay hidden until the other person sends a new message; the UI clearly shows which chats are Done or Ignored.
+
+---
+
 ## Updated Proposed File Structure
 
 ```
@@ -297,6 +326,7 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 │       ├── index.js
 │       ├── settings.js
 │       ├── ignored.js
+│       ├── chatState.js       # new: unified ignored/done state
 │       └── history.js
 ├── views/
 │   ├── layout.ejs

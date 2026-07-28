@@ -4,7 +4,7 @@ const { serveStatic } = require('@hono/node-server/serve-static');
 const { render } = require('./render');
 const { getStatus, getHealth, getQrDataUrl, getRecentChats, restartClient } = require('../whatsapp/client');
 const settingsDb = require('../db/settings');
-const ignoredDb = require('../db/ignored');
+const chatStateDb = require('../db/chatState');
 const historyDb = require('../db/history');
 const scheduler = require('../scheduler');
 const { runOnce } = require('../engine/runner');
@@ -184,20 +184,20 @@ function createApp() {
   });
 
   app.get('/ignored', async (c) => {
-    const ignored = ignoredDb.list();
+    const ignored = chatStateDb.listByState('ignored');
     return page(c, 'ignored', { title: 'Ignored Chats', ignored });
   });
 
   app.post('/ignored/:id', async (c) => {
     const id = c.req.param('id');
     const body = await c.req.parseBody();
-    ignoredDb.add(id, body.name || id);
+    chatStateDb.add(id, body.name || id, 'ignored');
     return c.redirect('/ignored');
   });
 
   app.post('/ignored/:id/delete', async (c) => {
     const id = c.req.param('id');
-    ignoredDb.remove(id);
+    chatStateDb.remove(id);
     return c.redirect('/ignored');
   });
 
@@ -210,6 +210,7 @@ function createApp() {
 
     try {
       const raw = await getRecentChats(limit);
+      const stateById = chatStateDb.getStateById();
       const now = Date.now();
       chats = raw.map((chat) => {
         const lastTs = chat.lastMessage?.timestampMs || 0;
@@ -217,27 +218,46 @@ function createApp() {
         return {
           ...chat,
           hoursSince: hoursSince !== null ? Number(hoursSince.toFixed(1)) : null,
-          needsReply: Boolean(chat.lastMessage && !chat.lastMessage.fromMe && hoursSince !== null && hoursSince > thresholdHours)
+          needsReply: Boolean(
+            chat.lastMessage &&
+            !chat.lastMessage.fromMe &&
+            !chat.lastMessage.hasReactionFromMe &&
+            hoursSince !== null &&
+            hoursSince > thresholdHours
+          ),
+          state: stateById[chat.id] || null
         };
       });
     } catch (err) {
       error = err.message;
     }
 
-    const ignored = new Set(ignoredDb.list().map((i) => i.id));
-    return page(c, 'chats', { title: 'Chats', chats, ignored, error });
+    return page(c, 'chats', { title: 'Chats', chats, error });
   });
 
   app.post('/chats/:id/ignore', async (c) => {
     const id = c.req.param('id');
     const body = await c.req.parseBody();
-    ignoredDb.add(id, body.name || id);
+    chatStateDb.add(id, body.name || id, 'ignored');
     return c.redirect('/chats');
   });
 
   app.post('/chats/:id/unignore', async (c) => {
     const id = c.req.param('id');
-    ignoredDb.remove(id);
+    chatStateDb.remove(id);
+    return c.redirect('/chats');
+  });
+
+  app.post('/chats/:id/done', async (c) => {
+    const id = c.req.param('id');
+    const body = await c.req.parseBody();
+    chatStateDb.add(id, body.name || id, 'done');
+    return c.redirect('/chats');
+  });
+
+  app.post('/chats/:id/undone', async (c) => {
+    const id = c.req.param('id');
+    chatStateDb.remove(id);
     return c.redirect('/chats');
   });
 

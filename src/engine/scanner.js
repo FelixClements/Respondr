@@ -1,5 +1,5 @@
 const settingsDb = require('../db/settings');
-const ignoredDb = require('../db/ignored');
+const chatStateDb = require('../db/chatState');
 
 function hoursSince(timestampMs, now = Date.now()) {
   return (now - timestampMs) / (1000 * 60 * 60);
@@ -10,7 +10,8 @@ async function scan(getRecentChats, now = Date.now()) {
   const thresholdHours = parseFloat(settingsDb.get('threshold_hours')) || 3;
 
   const chats = await getRecentChats(chatLimit);
-  const ignoredIds = new Set(ignoredDb.list().map((chat) => chat.id));
+  const ignoredIds = new Set(chatStateDb.listByState('ignored').map((chat) => chat.id));
+  const doneRows = chatStateDb.listByState('done');
   const forgotten = [];
 
   for (const chat of chats) {
@@ -18,7 +19,17 @@ async function scan(getRecentChats, now = Date.now()) {
       continue;
     }
 
-    if (!chat.lastMessage || chat.lastMessage.fromMe) {
+    const doneState = doneRows.find((row) => row.id === chat.id);
+    if (doneState) {
+      const lastMessageAt = chat.lastMessage?.timestampMs || 0;
+      if (chatStateDb.resetDoneIfNewMessage(chat.id, lastMessageAt)) {
+        // done state was cleared because of new activity; proceed to evaluate below
+      } else {
+        continue;
+      }
+    }
+
+    if (!chat.lastMessage || chat.lastMessage.fromMe || chat.lastMessage.hasReactionFromMe) {
       continue;
     }
 

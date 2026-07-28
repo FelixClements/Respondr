@@ -14,6 +14,7 @@
           <th>Name</th>
           <th>Last message</th>
           <th>From me</th>
+          <th>Reacted</th>
           <th>Hours since</th>
           <th>Status</th>
           <th>Actions</th>
@@ -38,11 +39,20 @@
               <% } %>
             </td>
             <td>
+              <% if (chat.lastMessage && chat.lastMessage.hasReactionFromMe) { %>
+                Yes
+              <% } else { %>
+                No
+              <% } %>
+            </td>
+            <td>
               <%= chat.hoursSince !== null ? chat.hoursSince : '—' %>
             </td>
             <td>
-              <% if (ignored.has(chat.id)) { %>
+              <% if (chat.state === 'ignored') { %>
                 <span class="badge ignored">ignored</span>
+              <% } else if (chat.state === 'done') { %>
+                <span class="badge done">done</span>
               <% } else if (chat.needsReply) { %>
                 <span class="badge needs-reply">needs reply</span>
               <% } else { %>
@@ -50,17 +60,36 @@
               <% } %>
             </td>
             <td>
-              <% if (ignored.has(chat.id)) { %>
-                <form method="POST" action="/chats/<%= encodeURIComponent(chat.id) %>/unignore" class="inline-form">
-                  <input type="hidden" name="name" value="<%= chat.name || chat.id %>">
-                  <button type="submit">Unignore</button>
-                </form>
-              <% } else { %>
-                <form method="POST" action="/chats/<%= encodeURIComponent(chat.id) %>/ignore" class="inline-form">
-                  <input type="hidden" name="name" value="<%= chat.name || chat.id %>">
-                  <button type="submit">Ignore</button>
-                </form>
-              <% } %>
+              <div class="action-group">
+                <% if (chat.state === 'ignored') { %>
+                  <form method="POST" action="/chats/<%= encodeURIComponent(chat.id) %>/unignore" class="inline-form">
+                    <input type="hidden" name="name" value="<%= chat.name || chat.id %>">
+                    <button type="submit" class="button-sm ghost">Unignore</button>
+                  </form>
+                  <form method="POST" action="/chats/<%= encodeURIComponent(chat.id) %>/done" class="inline-form">
+                    <input type="hidden" name="name" value="<%= chat.name || chat.id %>">
+                    <button type="submit" class="button-sm primary">Done</button>
+                  </form>
+                <% } else if (chat.state === 'done') { %>
+                  <form method="POST" action="/chats/<%= encodeURIComponent(chat.id) %>/undone" class="inline-form">
+                    <input type="hidden" name="name" value="<%= chat.name || chat.id %>">
+                    <button type="submit" class="button-sm ghost">Undo</button>
+                  </form>
+                  <form method="POST" action="/chats/<%= encodeURIComponent(chat.id) %>/ignore" class="inline-form">
+                    <input type="hidden" name="name" value="<%= chat.name || chat.id %>">
+                    <button type="submit" class="button-sm ghost">Ignore</button>
+                  </form>
+                <% } else { %>
+                  <form method="POST" action="/chats/<%= encodeURIComponent(chat.id) %>/done" class="inline-form">
+                    <input type="hidden" name="name" value="<%= chat.name || chat.id %>">
+                    <button type="submit" class="button-sm primary">Done</button>
+                  </form>
+                  <form method="POST" action="/chats/<%= encodeURIComponent(chat.id) %>/ignore" class="inline-form">
+                    <input type="hidden" name="name" value="<%= chat.name || chat.id %>">
+                    <button type="submit" class="button-sm ghost">Ignore</button>
+                  </form>
+                <% } %>
+              </div>
             </td>
           </tr>
         <% }) %>

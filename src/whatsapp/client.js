@@ -174,6 +174,40 @@ async function getRecentChats(limit = 50) {
     const sorted = all.slice().sort((a, b) => (b.t || 0) - (a.t || 0));
     const result = [];
 
+    let meId = null;
+    try {
+      const User = window.require('WAWebUserPrefs');
+      const meWid = User.getMaybeMePnUser ? User.getMaybeMePnUser() : (User.getMaybeMeUser ? User.getMaybeMeUser() : null);
+      meId = meWid?._serialized || null;
+    } catch (e) {
+      try {
+        const Contact = window.require('WAWebCollections').Contact;
+        if (Contact._models && Contact._models.find) {
+          const meContact = Contact._models.find((c) => c.isMe === true);
+          meId = meContact?.id?._serialized || null;
+        }
+      } catch (e2) {}
+    }
+
+    function hasReactionFromMe(msg) {
+      if (!msg || !msg.reactions) return false;
+      const r = msg.reactions;
+      if (r.reactionByMe) return true;
+      const models = r._models || r.models || [];
+      if (models.length) {
+        return models.some((rx) => {
+          if (rx.reactionByMe) return true;
+          if (rx.hasReactionByMe === true) return true;
+          const senders = rx.senders || (rx._models && rx._models.map((m) => m.sender));
+          if (senders && senders.length) {
+            return senders.some((s) => s && (s.isMe === true || (meId && s.id && s.id._serialized === meId)));
+          }
+          return false;
+        });
+      }
+      return false;
+    }
+
     for (const chat of sorted) {
       if (result.length >= chatLimit) break;
 
@@ -195,7 +229,8 @@ async function getRecentChats(limit = 50) {
           lastMessage = {
             fromMe: last.id.fromMe,
             timestamp: last.t,
-            timestampMs: last.t * 1000
+            timestampMs: last.t * 1000,
+            hasReactionFromMe: hasReactionFromMe(last)
           };
         }
       }
@@ -207,7 +242,8 @@ async function getRecentChats(limit = 50) {
             lastMessage = {
               fromMe: msg.id.fromMe,
               timestamp: msg.t,
-              timestampMs: msg.t * 1000
+              timestampMs: msg.t * 1000,
+              hasReactionFromMe: hasReactionFromMe(msg)
             };
           }
         } catch (e) {}
@@ -226,7 +262,8 @@ async function getRecentChats(limit = 50) {
     return result;
   }, limit);
 
-  logger.debug(`getRecentChats returning ${chats.length} chats`);
+  const reactedCount = chats.filter((c) => c.lastMessage && c.lastMessage.hasReactionFromMe).length;
+  logger.debug(`getRecentChats returning ${chats.length} chats, ${reactedCount} with my reaction on the last message`);
   return chats;
 }
 

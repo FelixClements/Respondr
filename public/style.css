@@ -321,6 +321,45 @@ tr:hover td {
   color: #374151;
 }
 
+.badge.done {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.action-group {
+  display: inline-flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.button-sm {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8rem;
+  border-radius: var(--radius);
+}
+
+.button-sm.ghost {
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.button-sm.ghost:hover {
+  background: var(--bg);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.button-sm.primary {
+  background: var(--primary);
+  color: #fff;
+  border: 1px solid var(--primary);
+}
+
+.button-sm.primary:hover {
+  background: var(--primary-hover);
+}
+
 #log-container {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   font-size: 0.85rem;

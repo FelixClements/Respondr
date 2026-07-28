@@ -1,24 +1,23 @@
-const { getDb } = require('./index');
+const chatState = require('./chatState');
 
 function add(chatId, name) {
-  const db = getDb();
-  db.prepare('INSERT OR REPLACE INTO ignored_chats (id, name, ignored_at) VALUES (?, ?, ?)').run(chatId, name, Date.now());
+  chatState.add(chatId, name, 'ignored');
 }
 
 function remove(chatId) {
-  const db = getDb();
-  db.prepare('DELETE FROM ignored_chats WHERE id = ?').run(chatId);
+  chatState.remove(chatId);
 }
 
 function isIgnored(chatId) {
-  const db = getDb();
-  const row = db.prepare('SELECT 1 FROM ignored_chats WHERE id = ?').get(chatId);
-  return !!row;
+  return chatState.isIgnored(chatId);
 }
 
 function list() {
-  const db = getDb();
-  return db.prepare('SELECT id, name, ignored_at FROM ignored_chats ORDER BY ignored_at DESC').all();
+  return chatState.listByState('ignored').map((row) => ({
+    id: row.id,
+    name: row.name,
+    ignored_at: row.created_at
+  }));
 }
 
 module.exports = { add, remove, isIgnored, list };
