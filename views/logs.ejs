@@ -1,26 +1,30 @@
-<h2>Logs</h2>
-<p>Current level: <strong><%= (settings.log_level || 'info').toUpperCase() %></strong></p>
+<div class="page-header">
+  <h2>Logs</h2>
+  <p>Live application logs</p>
+</div>
 
-<form method="POST" action="/logs">
-  <label>
-    Minimum log level
-    <select name="log_level">
-      <% ['debug','info','warn','error'].forEach(level => { %>
-        <option value="<%= level %>" <%= settings.log_level === level ? 'selected' : '' %>><%= level.toUpperCase() %></option>
-      <% }) %>
-    </select>
-  </label>
-  <button type="submit">Set level</button>
-</form>
+<div class="card">
+  <form method="POST" action="/logs" style="display:flex;gap:1rem;align-items:flex-end;flex-wrap:wrap;margin-bottom:1rem">
+    <label style="flex:1;min-width:200px;margin-bottom:0">
+      Minimum log level
+      <select name="log_level">
+        <% ['debug','info','warn','error'].forEach(level => { %>
+          <option value="<%= level %>" <%= settings.log_level === level ? 'selected' : '' %>><%= level.toUpperCase() %></option>
+        <% }) %>
+      </select>
+    </label>
+    <button type="submit" class="btn btn-primary">Set level</button>
+  </form>
 
-<div id="log-container">
-  <% logs.forEach(log => { %>
-    <div class="log-entry log-<%= log.level %>">
-      <span class="log-ts"><%= new Date(log.ts).toISOString() %></span>
-      <span class="log-level"><%= log.level.toUpperCase() %></span>
-      <span class="log-message"><%= log.message %></span>
-    </div>
-  <% }) %>
+  <div id="log-container">
+    <% logs.forEach(log => { %>
+      <div class="log-entry log-<%= log.level %>">
+        <span class="log-ts"><%= new Date(log.ts).toISOString() %></span>
+        <span class="log-level"><%= log.level.toUpperCase() %></span>
+        <span class="log-message"><%= log.message %></span>
+      </div>
+    <% }) %>
+  </div>
 </div>
 
 <script>

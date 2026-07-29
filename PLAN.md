@@ -255,7 +255,7 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 - [x] Add a reconnect button to the dashboard
 - [x] Harden `getHealth()` and `/api/status` with try/catch around puppeteer/chrome checks
 - [x] Add `fetch` timeout with `AbortController` in `public/status.js` so the status indicator never stays on "checking..."
-- [x] Expand default `PUPPETEER_ARGS` for stability and update `run-local-no-docker.sh` to install Chrome matching the project's Puppeteer major version
+- [x] Expand default `PUPPETEER_ARGS` for stability and remove `run-local-no-docker.sh`; the local script is now Docker-only
 - [x] Surface current log level on the `/logs` page
 
 **Acceptance:** Debug logs are visible when log level is debug; `/api/status` never crashes the server; status indicator updates or shows "unavailable" within 8 seconds; reconnect works from the dashboard.

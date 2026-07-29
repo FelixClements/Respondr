@@ -3,60 +3,68 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#4f46e5">
+  <meta name="theme-color" content="#0B0F19">
   <title><%= title || 'Respondr' %></title>
-  <link rel="stylesheet" href="/static/style.css?v=2">
+  <link rel="stylesheet" href="/static/style.css?v=4">
 </head>
 <body>
-  <header>
-    <div class="header-top">
-      <h1>Respondr</h1>
-      <% if (user) { %>
-        <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="main-nav" type="button">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-      <% } %>
-    </div>
-    <% if (user) { %>
-      <div id="status-bar">
-        <div>
-          <span id="status-indicator">checking...</span>
-          <span id="status-icons"></span>
-        </div>
-        <span class="user-info">
-          <%= user %>
-          <form method="POST" action="/logout" class="inline-form"><button type="submit" class="button-ghost">Logout</button></form>
-        </span>
+  <div class="page">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a href="/" class="brand">
+          <span class="brand-dot" aria-hidden="true"></span>
+          Respondr
+        </a>
+        <% if (user) { %>
+          <div class="topbar-right">
+            <span id="connection-badge" class="status-badge initializing">Checking…</span>
+            <span class="user-pill">
+              <%= user %>
+              <form method="POST" action="/logout" class="inline-form">
+                <button type="submit" class="btn btn-ghost btn-sm">Logout</button>
+              </form>
+            </span>
+            <button class="nav-toggle" id="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="main-nav" type="button">
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+          </div>
+        <% } %>
       </div>
-      <nav id="main-nav" aria-label="Main">
-        <a href="/">Dashboard</a>
-        <a href="/chats">Chats</a>
-        <a href="/qr">QR</a>
-        <a href="/settings">Settings</a>
-        <a href="/notifications">Notifications</a>
-        <a href="/logs">Logs</a>
-        <a href="/ignored">Ignored</a>
-        <a href="/history">History</a>
-      </nav>
-      <script>
-        (function () {
-          const toggle = document.getElementById('nav-toggle');
-          const nav = document.getElementById('main-nav');
-          if (!toggle || !nav) return;
-          toggle.addEventListener('click', () => {
-            const open = toggle.getAttribute('aria-expanded') === 'true';
-            toggle.setAttribute('aria-expanded', String(!open));
-            nav.classList.toggle('open', !open);
-          });
-        })();
-      </script>
-    <% } %>
-  </header>
-  <main>
-    <%- body %>
-  </main>
-  <script src="/static/status.js?v=3"></script>
+      <% if (user) { %>
+        <nav class="nav-row" id="main-nav" aria-label="Main">
+          <div class="nav-inner">
+            <a class="nav-link" href="/">Dashboard</a>
+            <a class="nav-link" href="/chats">Chats</a>
+            <a class="nav-link" href="/qr">Link</a>
+            <a class="nav-link" href="/settings">Settings</a>
+            <a class="nav-link" href="/notifications">Notifications</a>
+            <a class="nav-link" href="/logs">Logs</a>
+            <a class="nav-link" href="/ignored">Ignored</a>
+            <a class="nav-link" href="/history">History</a>
+          </div>
+        </nav>
+        <script>
+          (function () {
+            const toggle = document.getElementById('nav-toggle');
+            const nav = document.getElementById('main-nav');
+            if (!toggle || !nav) return;
+            toggle.addEventListener('click', () => {
+              const open = toggle.getAttribute('aria-expanded') === 'true';
+              toggle.setAttribute('aria-expanded', String(!open));
+              nav.classList.toggle('open', !open);
+            });
+          })();
+        </script>
+      <% } %>
+    </header>
+    <main>
+      <%- body %>
+    </main>
+    <div id="toast-container"></div>
+  </div>
+  <script src="/static/status.js?v=4"></script>
+  <script src="/static/app.js?v=1"></script>
 </body>
 </html>

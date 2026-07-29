@@ -1,12 +1,41 @@
-<h2>Dashboard</h2>
-<p>WhatsApp status: <%= status.status %> (ready: <%= status.isReady %>)</p>
-<button id="reconnect-btn" type="button">Reconnect WhatsApp</button>
-<pre id="reconnect-result"></pre>
+<div class="page-header">
+  <h2>Dashboard</h2>
+  <p>Overview of your WhatsApp response reminders</p>
+</div>
+
+<section class="metrics" aria-label="Dashboard metrics">
+  <article class="metric">
+    <div class="metric-value"><%= typeof stats.total === 'number' ? stats.total : '—' %></div>
+    <div class="metric-label">Active chats</div>
+  </article>
+  <article class="metric <%= (stats.urgent || 0) > 0 ? 'urgent' : '' %>">
+    <div class="metric-value"><%= typeof stats.urgent === 'number' ? stats.urgent : '—' %></div>
+    <div class="metric-label">Urgent / Overdue</div>
+  </article>
+  <article class="metric">
+    <div class="metric-value"><%= stats.snoozed %></div>
+    <div class="metric-label">Ignored / Done</div>
+  </article>
+  <article class="metric">
+    <div class="metric-value" data-next-scan="<%= nextScan ? new Date(nextScan).toISOString() : '' %>" data-countdown>—</div>
+    <div class="metric-label">Next scan</div>
+  </article>
+</section>
+
+<div class="card connection-header">
+  <div>
+    <h3 style="margin:0 0 0.25rem">WhatsApp</h3>
+    <p class="muted" style="margin:0">Status: <%= status.status %> (ready: <%= status.isReady %>)</p>
+  </div>
+  <button id="reconnect-btn" class="btn btn-ghost" type="button">Reconnect WhatsApp</button>
+</div>
+<pre id="reconnect-result" class="code-block" style="display:none"></pre>
 
 <script>
   document.getElementById('reconnect-btn').addEventListener('click', async () => {
     const el = document.getElementById('reconnect-result');
     el.textContent = 'Reconnecting...';
+    el.style.display = 'block';
     try {
       const res = await fetch('/api/reconnect', { method: 'POST' });
       const data = await res.json();
@@ -17,13 +46,18 @@
   });
 </script>
 
-<h3>Recent reminders</h3>
-<% if (recentReminders.length === 0) { %>
-  <p>No reminders yet.</p>
-<% } else { %>
-  <ul>
-    <% recentReminders.forEach(r => { %>
-      <li><%= r.chat_name %> at <%= new Date(r.sent_at).toLocaleString() %></li>
-    <% }) %>
-  </ul>
-<% } %>
+<div class="card">
+  <h3>Recent reminders</h3>
+  <% if (recentReminders.length === 0) { %>
+    <p class="muted">No reminders yet.</p>
+  <% } else { %>
+    <ul class="activity-list">
+      <% recentReminders.forEach(r => { %>
+        <li>
+          <span class="activity-title"><%= r.chat_name %></span>
+          <span class="activity-time"><%= new Date(r.sent_at).toLocaleString() %></span>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</div>

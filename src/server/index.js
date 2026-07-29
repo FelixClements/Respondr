@@ -83,7 +83,44 @@ function createApp() {
   app.get('/', async (c) => {
     const status = getStatus();
     const recentReminders = historyDb.getRecentReminders(5);
-    return page(c, 'index', { title: 'Dashboard', status, recentReminders });
+    const recentScans = historyDb.getRecentScans(1);
+    const settings = settingsDb.getAll();
+    const thresholdHours = parseFloat(settings.threshold_hours) || 3;
+    const limit = parseInt(settings.chat_limit, 10) || 50;
+
+    const stateCounts = { ignored: 0, done: 0 };
+    for (const row of chatStateDb.list()) {
+      if (stateCounts[row.state] !== undefined) stateCounts[row.state]++;
+    }
+
+    const stats = {
+      total: null,
+      urgent: null,
+      snoozed: stateCounts.ignored + stateCounts.done
+    };
+
+    try {
+      const raw = await getRecentChats(limit);
+      const now = Date.now();
+      stats.total = raw.length;
+      stats.urgent = raw.filter((chat) => {
+        const lastTs = chat.lastMessage?.timestampMs || 0;
+        const hoursSince = lastTs ? (now - lastTs) / (1000 * 60 * 60) : null;
+        return (
+          chat.lastMessage &&
+          !chat.lastMessage.fromMe &&
+          !chat.lastMessage.hasReactionFromMe &&
+          hoursSince !== null &&
+          hoursSince > thresholdHours
+        );
+      }).length;
+    } catch (err) {
+      // stats remain null for live chat data
+    }
+
+    const lastScan = recentScans[0] || null;
+    const nextScan = scheduler.getNextRunAt();
+    return page(c, 'index', { title: 'Dashboard', status, recentReminders, stats, lastScan, nextScan });
   });
 
   app.get('/qr', async (c) => {
@@ -207,10 +244,15 @@ function createApp() {
     const limit = parseInt(settings.chat_limit, 10) || 50;
     let chats = [];
     let error = null;
+    const status = getStatus();
 
     try {
       const raw = await getRecentChats(limit);
-      const stateById = chatStateDb.getStateById();
+      const stateRows = chatStateDb.list();
+      const stateById = {};
+      for (const row of stateRows) {
+        stateById[row.id] = { state: row.state, until: row.until, createdAt: row.created_at };
+      }
       const now = Date.now();
       chats = raw.map((chat) => {
         const lastTs = chat.lastMessage?.timestampMs || 0;
@@ -232,7 +274,8 @@ function createApp() {
       error = err.message;
     }
 
-    return page(c, 'chats', { title: 'Chats', chats, error });
+    const nextScan = scheduler.getNextRunAt();
+    return page(c, 'chats', { title: 'Chats', chats, error, status, nextScan });
   });
 
   app.post('/chats/:id/ignore', async (c) => {

@@ -1,23 +1,36 @@
-<h2>History</h2>
+<div class="page-header">
+  <h2>History</h2>
+  <p>Past reminders and scans</p>
+</div>
 
-<h3>Reminders</h3>
-<% if (reminders.length === 0) { %>
-  <p>No reminders yet.</p>
-<% } else { %>
-  <ul>
-    <% reminders.forEach(r => { %>
-      <li><%= r.chat_name %> at <%= new Date(r.sent_at).toLocaleString() %></li>
-    <% }) %>
-  </ul>
-<% } %>
+<div class="card">
+  <h3>Reminders</h3>
+  <% if (reminders.length === 0) { %>
+    <p class="muted">No reminders yet.</p>
+  <% } else { %>
+    <ul class="activity-list">
+      <% reminders.forEach(r => { %>
+        <li>
+          <span class="activity-title"><%= r.chat_name %></span>
+          <span class="activity-time"><%= new Date(r.sent_at).toLocaleString() %></span>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</div>
 
-<h3>Scan logs</h3>
-<% if (scans.length === 0) { %>
-  <p>No scan logs yet.</p>
-<% } else { %>
-  <ul>
-    <% scans.forEach(s => { %>
-      <li><%= new Date(s.run_at).toLocaleString() %> — checked <%= s.chats_checked %>, sent <%= s.reminders_sent %></li>
-    <% }) %>
-  </ul>
-<% } %>
+<div class="card">
+  <h3>Scan logs</h3>
+  <% if (scans.length === 0) { %>
+    <p class="muted">No scan logs yet.</p>
+  <% } else { %>
+    <ul class="activity-list">
+      <% scans.forEach(s => { %>
+        <li>
+          <span class="activity-title"><%= new Date(s.run_at).toLocaleString() %></span>
+          <span class="activity-time">checked <%= s.chats_checked %>, sent <%= s.reminders_sent %></span>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+</div>
