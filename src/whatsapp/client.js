@@ -1,6 +1,7 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode');
 const fs = require('fs');
+const path = require('path');
 const logger = require('../lib/logger');
 
 const AUTH_DIR = process.env.AUTH_DIR || './.wwebjs_auth';
@@ -23,6 +24,22 @@ let qrDataUrl = null;
 let status = 'initializing';
 let isReady = false;
 let launchError = null;
+
+function clearProfileLocks() {
+  const sessionDir = path.join(AUTH_DIR, 'session');
+  try {
+    if (!fs.existsSync(sessionDir)) return;
+    const files = fs.readdirSync(sessionDir);
+    for (const file of files) {
+      if (file.startsWith('Singleton')) {
+        fs.unlinkSync(path.join(sessionDir, file));
+        logger.debug(`Cleared stale profile lock: ${file}`);
+      }
+    }
+  } catch (err) {
+    logger.debug('Could not clear profile locks:', err.message);
+  }
+}
 
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: AUTH_DIR }),
@@ -80,6 +97,7 @@ client.on('change_battery', (batteryInfo) => {
 
 async function startClient() {
   logger.info('Initializing WhatsApp client...');
+  clearProfileLocks();
   logger.debug(`WhatsApp client config: executablePath=${PUPPETEER_EXECUTABLE_PATH || 'default'}, args=[${PUPPETEER_ARGS.join(', ')}], authDir=${AUTH_DIR}`);
   try {
     await client.initialize();
