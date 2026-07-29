@@ -161,4 +161,27 @@
   }
 
   bindChatForms(document);
+
+  function initThemeToggle() {
+    const html = document.documentElement;
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    const sun = document.getElementById('theme-icon-sun');
+    const moon = document.getElementById('theme-icon-moon');
+    function updateIcon() {
+      const isLight = html.getAttribute('data-theme') === 'light';
+      if (sun) sun.style.display = isLight ? 'none' : 'block';
+      if (moon) moon.style.display = isLight ? 'block' : 'none';
+    }
+    updateIcon();
+    btn.addEventListener('click', function () {
+      const isLight = html.getAttribute('data-theme') === 'light';
+      const next = isLight ? 'dark' : 'light';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('respondr-theme', next);
+      updateIcon();
+    });
+  }
+
+  initThemeToggle();
 })();
