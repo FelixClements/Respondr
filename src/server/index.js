@@ -32,7 +32,10 @@ function createApp() {
   app.use('/sw.js', serveStatic({ path: './public/sw.js' }));
   app.use('/icon-192.png', serveStatic({ path: './public/icon-192.png' }));
   app.use('/icon-512.png', serveStatic({ path: './public/icon-512.png' }));
+  app.use('/icon-maskable-192.png', serveStatic({ path: './public/icon-maskable-192.png' }));
+  app.use('/icon-maskable-512.png', serveStatic({ path: './public/icon-maskable-512.png' }));
   app.use('/icon.svg', serveStatic({ path: './public/icon.svg' }));
+  app.use('/icon-maskable.svg', serveStatic({ path: './public/icon-maskable.svg' }));
 
   app.use('*', auth.authMiddleware);
 
