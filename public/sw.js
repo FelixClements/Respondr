@@ -1,7 +1,7 @@
-const CACHE_NAME = 'respondr-v1';
+const CACHE_NAME = 'respondr-v2';
 const STATIC_ASSETS = [
   '/static/style.css?v=5',
-  '/static/app.js?v=2',
+  '/static/app.js?v=3',
   '/static/status.js?v=4',
   '/icon-192.png',
   '/icon-512.png',

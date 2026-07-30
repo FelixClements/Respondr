@@ -240,5 +240,32 @@
     return Uint8Array.from(raw.split('').map(function (c) { return c.charCodeAt(0); }));
   }
 
+  function initInstallPrompt() {
+    const installBtn = document.getElementById('pwa-install');
+    if (!installBtn) return;
+
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = 'inline-flex';
+    });
+
+    installBtn.addEventListener('click', function () {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(function (choice) {
+        installBtn.style.display = 'none';
+        deferredPrompt = null;
+      });
+    });
+
+    window.addEventListener('appinstalled', function () {
+      installBtn.style.display = 'none';
+      deferredPrompt = null;
+    });
+  }
+
   initPwa();
+  initInstallPrompt();
 })();
