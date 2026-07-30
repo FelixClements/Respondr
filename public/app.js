@@ -184,4 +184,61 @@
   }
 
   initThemeToggle();
+
+  function initPwa() {
+    if (!('serviceWorker' in navigator)) return;
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js')
+        .then(function (registration) {
+          initPush(registration);
+        })
+        .catch(function (err) {
+          console.error('Service worker registration failed:', err);
+        });
+    });
+  }
+
+  function initPush(registration) {
+    if (!('PushManager' in window)) return;
+    const keyMeta = document.querySelector('meta[name="vapid-public-key"]');
+    const vapidKey = keyMeta ? keyMeta.content : '';
+    if (!vapidKey) return;
+
+    registration.pushManager.getSubscription().then(function (subscription) {
+      if (subscription) {
+        sendSubscriptionToServer(subscription);
+      } else {
+        return registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey)
+        }).then(function (sub) {
+          sendSubscriptionToServer(sub);
+        }).catch(function (err) {
+          console.error('Push subscription failed:', err);
+        });
+      }
+    });
+  }
+
+  function sendSubscriptionToServer(subscription) {
+    fetch('/api/push/subscribe', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(subscription)
+    }).then(function (res) {
+      if (!res.ok) throw new Error('Subscription save failed');
+    }).catch(function (err) {
+      console.error('Failed to send push subscription:', err);
+    });
+  }
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const raw = window.atob(base64);
+    return Uint8Array.from(raw.split('').map(function (c) { return c.charCodeAt(0); }));
+  }
+
+  initPwa();
 })();

@@ -352,14 +352,14 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 
 ## Phase 19 — PWA & Web Push
 
-- [ ] Add `public/manifest.json` with app name, icons, theme colors, and `display: standalone`.
-- [ ] Add `public/sw.js` service worker with install/activate/fetch and push event handlers.
-- [ ] Register the service worker in `public/app.js` and handle `beforeinstallprompt`.
-- [ ] Request notification permission and subscribe to Web Push, posting the subscription to the backend.
-- [ ] Add `POST /api/push/subscribe` and `POST /api/push/unsubscribe` endpoints to store subscriptions in SQLite.
-- [ ] Add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` to `.env.example` and `docker-compose.yml`.
-- [ ] Add a Web Push sender in `src/notifications/web-push.js` and wire it into the existing notification dispatcher.
-- [ ] Update `views/layout.ejs` with manifest link, theme-color meta, and Apple touch icon meta tags.
+- [x] Add `public/manifest.json` with app name, icons, theme colors, and `display: standalone`.
+- [x] Add `public/sw.js` service worker with install/activate/fetch and push event handlers.
+- [x] Register the service worker in `public/app.js` and handle `beforeinstallprompt`.
+- [x] Request notification permission and subscribe to Web Push, posting the subscription to the backend.
+- [x] Add `POST /api/push/subscribe` and `POST /api/push/unsubscribe` endpoints to store subscriptions in SQLite.
+- [x] Add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` to `.env.example` and `docker-compose.yml`.
+- [x] Add a Web Push sender in `src/notifications/web-push.js` and wire it into the existing notification dispatcher.
+- [x] Update `views/layout.ejs` with manifest link, theme-color meta, and Apple touch icon meta tags.
 - [ ] Add a “test push” button on the settings/notifications page for manual verification.
 - [ ] Update `README.md` with PWA setup (VAPID key generation) and Android install instructions.
 - [ ] Manually verify on Android: install PWA, receive a test push, and run a chat action from the installed app.

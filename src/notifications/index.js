@@ -1,5 +1,6 @@
 const ntfy = require('./ntfy');
 const gotify = require('./gotify');
+const webPush = require('./web-push');
 const { getNotificationConfig } = require('./config');
 
 function formatMessage(chat) {
@@ -14,7 +15,8 @@ async function send(chat) {
 
   await Promise.all([
     config.ntfy.enabled ? ntfy.send({ title, message, priority: config.ntfy.priority }) : Promise.resolve(),
-    config.gotify.enabled ? gotify.send({ title, message, priority: config.gotify.priority }) : Promise.resolve()
+    config.gotify.enabled ? gotify.send({ title, message, priority: config.gotify.priority }) : Promise.resolve(),
+    webPush.sendToAll({ title, body: message, url: '/', icon: '/icon-192.png' })
   ]);
 }
 
@@ -38,6 +40,15 @@ async function sendTest(title, message) {
     } catch (err) {
       results.push({ provider: 'gotify', ok: false, error: err.message });
     }
+  }
+
+  try {
+    const pushResult = await webPush.sendToAll({ title, body: message, url: '/', icon: '/icon-192.png' });
+    if (pushResult.sent > 0 || pushResult.failed > 0) {
+      results.push({ provider: 'web-push', ok: pushResult.failed === 0, ...pushResult });
+    }
+  } catch (err) {
+    results.push({ provider: 'web-push', ok: false, error: err.message });
   }
 
   if (results.length === 0) {

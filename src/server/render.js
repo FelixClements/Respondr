@@ -6,7 +6,7 @@ async function render(template, data = {}, layout = 'layout') {
 
   if (!layout) return body;
 
-  return ejs.renderFile(path.join(__dirname, '..', '..', 'views', `${layout}.ejs`), { ...data, body });
+  return ejs.renderFile(path.join(__dirname, '..', '..', 'views', `${layout}.ejs`), { ...data, vapidPublicKey: process.env.VAPID_PUBLIC_KEY, body });
 }
 
 module.exports = { render };

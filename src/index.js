@@ -8,12 +8,14 @@ const { startClient } = require('./whatsapp/client');
 const scheduler = require('./scheduler');
 const logger = require('./lib/logger');
 const { seedFromEnv: seedNotifications } = require('./notifications/config');
+const webPush = require('./notifications/web-push');
 
 async function main() {
   initDb();
   logger.setLevel(settingsDb.get('log_level'));
   logger.info(`Log level set to ${logger.getLevel()}`);
   seedNotifications();
+  webPush.init();
 
   const port = process.env.PORT || 9595;
   const app = createApp();

@@ -6,11 +6,13 @@ const { getStatus, getHealth, getQrDataUrl, getRecentChats, restartClient } = re
 const settingsDb = require('../db/settings');
 const chatStateDb = require('../db/chatState');
 const historyDb = require('../db/history');
+const pushSubscriptionsDb = require('../db/pushSubscriptions');
 const scheduler = require('../scheduler');
 const { runOnce } = require('../engine/runner');
 const logger = require('../lib/logger');
 const auth = require('./auth');
 const { sendTest } = require('../notifications');
+const webPush = require('../notifications/web-push');
 const { getCookie } = require('hono/cookie');
 
 const MANUAL_RUN_COOLDOWN_MS = 60 * 1000;
@@ -25,6 +27,12 @@ function createApp() {
     root: './public',
     rewriteRequestPath: (path) => path.replace(/^\/static\//, '')
   }));
+
+  app.use('/manifest.json', serveStatic({ path: './public/manifest.json' }));
+  app.use('/sw.js', serveStatic({ path: './public/sw.js' }));
+  app.use('/icon-192.png', serveStatic({ path: './public/icon-192.png' }));
+  app.use('/icon-512.png', serveStatic({ path: './public/icon-512.png' }));
+  app.use('/icon.svg', serveStatic({ path: './public/icon.svg' }));
 
   app.use('*', auth.authMiddleware);
 
@@ -352,6 +360,34 @@ function createApp() {
       logger.error(`Reconnect failed: ${err}`);
       return c.json({ ok: false, error: err.message, status: getStatus() }, 500);
     }
+  });
+
+  app.post('/api/push/subscribe', async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    if (!body.endpoint || !body.keys || !body.keys.p256dh || !body.keys.auth) {
+      return c.json({ ok: false, error: 'Invalid subscription' }, 400);
+    }
+    pushSubscriptionsDb.addPushSubscription(body);
+    return c.json({ ok: true });
+  });
+
+  app.post('/api/push/unsubscribe', async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    if (!body.endpoint) {
+      return c.json({ ok: false, error: 'Invalid subscription' }, 400);
+    }
+    pushSubscriptionsDb.removePushSubscription(body.endpoint);
+    return c.json({ ok: true });
+  });
+
+  app.post('/api/push/test', async (c) => {
+    const result = await webPush.sendToAll({
+      title: 'Respondr test',
+      body: 'Push notifications are working',
+      url: '/',
+      icon: '/icon-192.png'
+    });
+    return c.json({ ok: true, result });
   });
 
   app.onError((err, c) => {
