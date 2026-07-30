@@ -11,7 +11,7 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 - **Frontend:** EJS templates rendered manually + vanilla JS; optional Hono `basicAuth`
 - **Persistence:** SQLite in a mounted `data/` volume
 - **WhatsApp session:** `LocalAuth`, stored in `.wwebjs_auth` (mounted volume)
-- **Notifications:** NTFY + Gotify, selectable via `.env`
+- **Notifications:** NTFY + Gotify + PWA Web Push, selectable via `.env`
 - **Process:** Docker Compose with restart policy
 
 ---
@@ -341,5 +341,27 @@ This plan breaks the project into small, self-contained phases. Each task has a 
 │   └── history.ejs
 └── public/
     ├── style.css
-    └── status.js            # new
+    ├── status.js            # new
+    ├── app.js               # new: toasts, theme toggle, PWA registration
+    ├── manifest.json        # new: PWA manifest
+    ├── sw.js                # new: service worker
+    └── icons/               # new: PWA icons
 ```
+
+---
+
+## Phase 19 — PWA & Web Push
+
+- [ ] Add `public/manifest.json` with app name, icons, theme colors, and `display: standalone`.
+- [ ] Add `public/sw.js` service worker with install/activate/fetch and push event handlers.
+- [ ] Register the service worker in `public/app.js` and handle `beforeinstallprompt`.
+- [ ] Request notification permission and subscribe to Web Push, posting the subscription to the backend.
+- [ ] Add `POST /api/push/subscribe` and `POST /api/push/unsubscribe` endpoints to store subscriptions in SQLite.
+- [ ] Add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` to `.env.example` and `docker-compose.yml`.
+- [ ] Add a Web Push sender in `src/notifications/web-push.js` and wire it into the existing notification dispatcher.
+- [ ] Update `views/layout.ejs` with manifest link, theme-color meta, and Apple touch icon meta tags.
+- [ ] Add a “test push” button on the settings/notifications page for manual verification.
+- [ ] Update `README.md` with PWA setup (VAPID key generation) and Android install instructions.
+- [ ] Manually verify on Android: install PWA, receive a test push, and run a chat action from the installed app.
+
+**Acceptance:** Respondr is installable on Android Chrome, sends push notifications without NTFY/Gotify, and chat actions still work inside the installed PWA.
