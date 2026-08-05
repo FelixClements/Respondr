@@ -226,6 +226,24 @@ async function getRecentChats(limit = 50) {
       return false;
     }
 
+    function getDisplayName(chat) {
+      const isNumberLike = (s) => typeof s === 'string' && /^[+\d][\d\s\-+()]*$/.test(s);
+      const title = chat.formattedTitle;
+      if (title && !isNumberLike(title)) {
+        return title;
+      }
+      const contact = chat.contact;
+      if (contact) {
+        const candidates = [contact.name, contact.pushname, contact.verifiedName, contact.shortName];
+        for (const c of candidates) {
+          if (c && !isNumberLike(c)) {
+            return c;
+          }
+        }
+      }
+      return title || 'Unknown';
+    }
+
     for (const chat of sorted) {
       if (result.length >= chatLimit) break;
 
@@ -269,7 +287,7 @@ async function getRecentChats(limit = 50) {
 
       result.push({
         id: chat.id._serialized,
-        name: chat.formattedTitle,
+        name: getDisplayName(chat),
         isGroup,
         isArchived,
         isMuted,
