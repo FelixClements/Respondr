@@ -5,13 +5,6 @@ const Database = require('better-sqlite3');
 const DATA_DIR = process.env.DATA_DIR || './data';
 const DB_PATH = process.env.DB_PATH || path.join(DATA_DIR, 'respondr.db');
 
-const DEFAULTS = {
-  interval_minutes: '30',
-  chat_limit: '50',
-  threshold_hours: '3',
-  log_level: 'info'
-};
-
 let db = null;
 
 function ensureDataDir() {
@@ -38,11 +31,6 @@ function initDb() {
   const schemaSql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
   const database = getDb();
   database.exec(schemaSql);
-
-  const insert = database.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
-  for (const [key, value] of Object.entries(DEFAULTS)) {
-    insert.run(key, value);
-  }
 }
 
-module.exports = { getDb, closeDb, initDb, DEFAULTS };
+module.exports = { getDb, closeDb, initDb };

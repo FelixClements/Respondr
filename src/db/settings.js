@@ -1,4 +1,11 @@
-const { getDb, DEFAULTS } = require('./index');
+const { getDb } = require('./index');
+
+const DEFAULTS = {
+  interval_minutes: '30',
+  chat_limit: '50',
+  threshold_hours: '3',
+  log_level: 'info'
+};
 
 function get(key) {
   const db = getDb();
@@ -27,4 +34,12 @@ function getAll() {
   return result;
 }
 
-module.exports = { get, set, has, getAll, DEFAULTS };
+function seedDefaults() {
+  const db = getDb();
+  const insert = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
+  for (const [key, value] of Object.entries(DEFAULTS)) {
+    insert.run(key, String(value));
+  }
+}
+
+module.exports = { get, set, has, getAll, DEFAULTS, seedDefaults };

@@ -12,6 +12,7 @@ const webPush = require('./notifications/web-push');
 
 async function main() {
   initDb();
+  settingsDb.seedDefaults();
   logger.setLevel(settingsDb.get('log_level'));
   logger.info(`Log level set to ${logger.getLevel()}`);
   seedNotifications();
