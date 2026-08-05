@@ -1,6 +1,6 @@
 services:
   respondr:
-    image: ghcr.io/felixclements/respondr:latest
+    image: ${RESPONDR_IMAGE:-ghcr.io/felixclements/respondr:latest}
     container_name: respondr
     ports:
       - "9595:9595"
