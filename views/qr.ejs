@@ -2,7 +2,9 @@
   <h2>Link WhatsApp</h2>
   <p class="status-line">Status: <span class="status-badge <%= status.isReady ? 'connected' : (status.status === 'awaiting_qr' ? 'waiting' : 'disconnected') %>"><%= status.isReady ? 'Connected' : status.status %></span></p>
 
-  <% if (qr) { %>
+  <% if (status.isReady) { %>
+    <p class="micro-copy">WhatsApp is already connected. <a href="/">Go to the dashboard</a>.</p>
+  <% } else if (qr) { %>
     <img src="<%= qr %>" alt="WhatsApp QR code" class="qr-image">
     <p class="micro-copy">Open WhatsApp on your phone, go to <strong>Menu / Settings &gt; Linked Devices &gt; Link a Device</strong>, and point your camera at the code.</p>
   <% } else { %>

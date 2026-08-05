@@ -74,6 +74,7 @@ client.on('auth_failure', (msg) => {
 client.on('ready', () => {
   isReady = true;
   status = 'ready';
+  qrDataUrl = null;
   logger.info('WhatsApp client is ready.');
 });
 
