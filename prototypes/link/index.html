@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Respondr — linking instructions prototype</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --accent: #4f46e5;
+      --danger: #ef4444;
+      --success: #22c55e;
+      --border: #e2e8f0;
+      --radius: 14px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #111827;
+      color: var(--text);
+    }
+    .device {
+      max-width: 414px;
+      margin: 20px auto;
+      min-height: 760px;
+      background: var(--bg);
+      border-radius: 32px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+      position: relative;
+    }
+    .statusbar {
+      height: 44px;
+      background: var(--card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+    main { flex: 1; padding: 18px; padding-bottom: 120px; }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    h2 { font-size: 18px; margin: 0 0 12px; }
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .pill.success { background: #dcfce7; color: #166534; }
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: white;
+    }
+    .btn.secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    .btn.small { padding: 6px 10px; font-size: 12px; }
+    .tabbar {
+      display: flex;
+      justify-content: space-around;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      padding: 8px 0;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .step { display: flex; align-items: flex-start; gap: 12px; margin: 12px 0; font-size: 14px; }
+    .step .num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .hidden { display: none !important; }
+
+    /* Link prompt variants */
+    .link-prompt {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .link-prompt.banner { margin-top: 8px; }
+    .link-prompt.modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: calc(100% - 40px);
+      max-width: 374px;
+      z-index: 50;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .link-prompt.fullscreen {
+      position: fixed;
+      inset: 0;
+      border-radius: 0;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .link-prompt h3 { margin: 0 0 8px; font-size: 16px; }
+    .link-prompt p { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+    .link-prompt .actions { display: flex; gap: 10px; margin-top: 14px; }
+    .link-prompt .actions .btn { flex: 1; }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 40;
+    }
+    .hidden { display: none !important; }
+
+    .switcher {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.85);
+      color: white;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      display: flex;
+      gap: 12px;
+      z-index: 200;
+      max-width: 90vw;
+    }
+    .switcher label { cursor: pointer; }
+    .switcher select {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="switcher">
+    <label>Variant:
+      <select id="variant" onchange="update()">
+        <option value="banner" selected>Banner on Home</option>
+        <option value="modal">Modal</option>
+        <option value="fullscreen">Full screen</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="device" id="device">
+    <div class="statusbar">Respondr</div>
+    <main id="main">
+      <div class="card">
+        <h2>Home</h2>
+        <span class="pill" id="status-pill">WhatsApp not connected</span>
+        <p style="color:var(--muted);margin-top:8px;font-size:14px" id="status-text">No reminders can be sent until WhatsApp is linked.</p>
+      </div>
+
+      <div class="link-prompt banner" id="prompt">
+        <h3>Link WhatsApp</h3>
+        <p>Use a desktop or laptop to complete this step.</p>
+        <div class="step"><span class="num">1</span> Open Respondr in a desktop browser.</div>
+        <div class="step"><span class="num">2</span> Go to <strong>Link WhatsApp</strong> on the desktop.</div>
+        <div class="step"><span class="num">3</span> On this phone, open WhatsApp → Settings → Linked devices → Link a device.</div>
+        <div class="step"><span class="num">4</span> Scan the QR code shown on the desktop.</div>
+        <div class="step"><span class="num">5</span> Pull down on this screen to refresh once linked.</div>
+        <div class="actions">
+          <button class="btn" onclick="alert('This would refresh the connection status.')">I’ve linked, refresh</button>
+          <button class="btn secondary" onclick="alert('This would collapse the instructions.')">Got it</button>
+        </div>
+      </div>
+
+      <div class="card" id="placeholder-card">
+        <h2>Chats</h2>
+        <p style="color:var(--muted);font-size:14px">Chats will appear after WhatsApp is connected.</p>
+      </div>
+    </main>
+
+    <div class="tabbar">
+      <div>Home</div>
+      <div>Chats</div>
+      <div>Settings</div>
+    </div>
+  </div>
+
+  <script>
+    function update() {
+      const variant = document.getElementById('variant').value;
+      const prompt = document.getElementById('prompt');
+      const main = document.getElementById('main');
+
+      prompt.className = 'link-prompt ' + variant;
+
+      if (variant === 'banner') {
+        main.insertBefore(prompt, main.querySelector('#placeholder-card'));
+      } else {
+        document.body.appendChild(prompt);
+      }
+
+      const existingOverlay = document.querySelector('.overlay');
+      if (existingOverlay) existingOverlay.remove();
+
+      if (variant === 'modal' || variant === 'fullscreen') {
+        const overlay = document.createElement('div');
+        overlay.className = 'overlay';
+        document.body.appendChild(overlay);
+      }
+    }
+
+    update();
+  </script>
+</body>
+</html>

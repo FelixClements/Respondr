@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Respondr — mobile UI prototype</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --accent: #4f46e5;
+      --accent-2: #4338ca;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warn: #f59e0b;
+      --border: #e2e8f0;
+      --radius: 14px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #111827;
+      color: var(--text);
+    }
+    .device {
+      max-width: 414px;
+      margin: 20px auto;
+      height: 844px;
+      background: var(--bg);
+      border-radius: 32px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+      position: relative;
+    }
+    .statusbar {
+      height: 44px;
+      background: var(--card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+    main { flex: 1; overflow-y: auto; padding: 14px; }
+    .hidden { display: none !important; }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    h2 { font-size: 18px; margin: 0 0 12px; }
+    h3 { font-size: 15px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; }
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #e0e7ff;
+      color: var(--accent);
+    }
+    .pill.success { background: #dcfce7; color: #166534; }
+    .pill.danger { background: #fee2e2; color: #991b1b; }
+    .pill.warn { background: #fef3c7; color: #92400e; }
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: white;
+    }
+    .btn.secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    .btn.small { padding: 6px 10px; font-size: 12px; }
+    .chat {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .chat:last-child { border-bottom: none; }
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #e0e7ff;
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .chat-body { flex: 1; }
+    .chat-name { font-weight: 600; }
+    .chat-meta { font-size: 13px; color: var(--muted); }
+    .chat-actions { display: flex; gap: 6px; }
+    .input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-top: 6px;
+      font-size: 14px;
+    }
+    .label { font-size: 13px; color: var(--muted); margin-top: 12px; display: block; }
+
+    /* Variant A: bottom tabs */
+    .bottom-tabs {
+      display: flex;
+      justify-content: space-around;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .tab.active { color: var(--accent); font-weight: 600; }
+    .tab .icon { display: block; font-size: 20px; margin-bottom: 2px; }
+
+    /* Variant B: hamburger/drawer */
+    .topbar {
+      height: 56px;
+      background: var(--card);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .menu-btn { font-size: 22px; cursor: pointer; }
+    .drawer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 260px;
+      height: 100%;
+      background: var(--card);
+      box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+      transform: translateX(-100%);
+      transition: transform 0.2s ease;
+      z-index: 100;
+      padding: 24px 16px;
+    }
+    .drawer.open { transform: translateX(0); }
+    .drawer a { display: block; padding: 14px 8px; color: var(--text); text-decoration: none; border-radius: 10px; margin-bottom: 4px; }
+    .drawer a.active { background: #e0e7ff; color: var(--accent); font-weight: 600; }
+    .drawer .close { text-align: right; font-size: 22px; cursor: pointer; margin-bottom: 20px; }
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      display: none;
+      z-index: 99;
+    }
+    .overlay.show { display: block; }
+
+    /* Variant C: one-page */
+    .section { margin-bottom: 22px; }
+    .section h2 { display: flex; align-items: center; gap: 8px; }
+    .quick-actions {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 50;
+    }
+    .fab {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      font-size: 24px;
+      border: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .variant-switcher {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.85);
+      color: white;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      display: flex;
+      gap: 10px;
+      z-index: 200;
+    }
+    .variant-switcher label { cursor: pointer; }
+    .variant-switcher input { margin-right: 4px; }
+  </style>
+</head>
+<body>
+  <div class="variant-switcher">
+    <label><input type="radio" name="variant" value="a" checked onchange="setVariant('a')" /> A: Bottom tabs</label>
+    <label><input type="radio" name="variant" value="b" onchange="setVariant('b')" /> B: Drawer</label>
+    <label><input type="radio" name="variant" value="c" onchange="setVariant('c')" /> C: One-page</label>
+  </div>
+
+  <div class="device" id="device">
+    <!-- Variant A: statusbar + main + bottom tabs -->
+    <div class="variant-a">
+      <div class="statusbar">Respondr</div>
+      <main id="main-a">
+        <section class="page" data-page="dashboard">
+          <div class="card">
+            <h2>Dashboard</h2>
+            <div class="pill success">WhatsApp connected</div>
+            <div class="row" style="margin-top:14px"><strong>Urgent</strong><span class="pill danger">3</span></div>
+            <div class="row"><strong>Snoozed</strong><span class="pill warn">1</span></div>
+            <div class="row"><strong>Next scan</strong><span>12 m</span></div>
+          </div>
+          <div class="card">
+            <h3>Recent reminders</h3>
+            <div class="row"><span>John Doe</span><span class="pill danger">4.5h</span></div>
+            <div class="row"><span>Alice Smith</span><span class="pill danger">8.2h</span></div>
+          </div>
+        </section>
+        <section class="page hidden" data-page="chats">
+          <h2 style="padding:0 16px 8px">Chats</h2>
+          <div class="card">
+            <div class="chat"><div class="avatar">JD</div><div class="chat-body"><div class="chat-name">John Doe</div><div class="chat-meta">last: 4.5h ago</div></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+            <div class="chat"><div class="avatar">AS</div><div class="chat-body"><div class="chat-name">Alice Smith</div><div class="chat-meta">last: 8.2h ago</div></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+            <div class="chat"><div class="avatar">+</div><div class="chat-body"><div class="chat-name">+32 4... 9191</div><div class="chat-meta">last: 12h ago</div></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+            <div class="chat"><div class="avatar">F</div><div class="chat-body"><div class="chat-name">Family group</div><div class="chat-meta">last: 1d ago • muted</div></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+          </div>
+        </section>
+        <section class="page hidden" data-page="qr">
+          <div class="card" style="text-align:center">
+            <h2>Link WhatsApp</h2>
+            <p class="pill success" style="margin:8px 0">Connected</p>
+            <p style="font-size:14px;color:var(--muted)">No QR code needed. Respondr is already linked.</p>
+            <button class="btn" style="margin-top:14px">Reconnect</button>
+          </div>
+        </section>
+        <section class="page hidden" data-page="settings">
+          <div class="card">
+            <h2>Settings</h2>
+            <label class="label">Scan interval (min)</label><input class="input" value="30" />
+            <label class="label">Chat limit</label><input class="input" value="50" />
+            <label class="label">Threshold (h)</label><input class="input" value="3" />
+            <label class="label">Log level</label><select class="input"><option>info</option><option>debug</option></select>
+            <button class="btn" style="margin-top:16px;width:100%">Save</button>
+          </div>
+          <div class="card">
+            <h3>Notifications</h3>
+            <div class="row"><span>ntfy</span><button class="btn secondary small">Configure</button></div>
+            <div class="row"><span>Gotify</span><button class="btn secondary small">Configure</button></div>
+            <div class="row"><span>Web Push</span><button class="btn small">Subscribe</button></div>
+          </div>
+        </section>
+      </main>
+      <nav class="bottom-tabs">
+        <div class="tab active" data-tab="dashboard" onclick="showPage('a','dashboard')"><span class="icon">🏠</span>Home</div>
+        <div class="tab" data-tab="chats" onclick="showPage('a','chats')"><span class="icon">💬</span>Chats</div>
+        <div class="tab" data-tab="qr" onclick="showPage('a','qr')"><span class="icon">🔗</span>Link</div>
+        <div class="tab" data-tab="settings" onclick="showPage('a','settings')"><span class="icon">⚙️</span>Settings</div>
+      </nav>
+    </div>
+
+    <!-- Variant B: topbar + drawer + main -->
+    <div class="variant-b hidden">
+      <div class="topbar"><div class="menu-btn" onclick="toggleDrawer(true)">☰</div><strong>Respondr</strong><div style="flex:1"></div><span class="pill success">connected</span></div>
+      <div class="overlay" onclick="toggleDrawer(false)"></div>
+      <div class="drawer">
+        <div class="close" onclick="toggleDrawer(false)">✕</div>
+        <a href="#" class="active" data-menu="dashboard" onclick="showPage('b','dashboard');toggleDrawer(false);return false">Dashboard</a>
+        <a href="#" data-menu="chats" onclick="showPage('b','chats');toggleDrawer(false);return false">Chats</a>
+        <a href="#" data-menu="qr" onclick="showPage('b','qr');toggleDrawer(false);return false">Link WhatsApp</a>
+        <a href="#" data-menu="settings" onclick="showPage('b','settings');toggleDrawer(false);return false">Settings</a>
+        <a href="#" data-menu="history" onclick="showPage('b','history');toggleDrawer(false);return false">History</a>
+        <a href="#" data-menu="ignored" onclick="showPage('b','ignored');toggleDrawer(false);return false">Ignored</a>
+      </div>
+      <main id="main-b">
+        <section class="page" data-page="dashboard">
+          <div class="card" style="display:flex;gap:12px;justify-content:space-between">
+            <div style="text-align:center;flex:1"><div class="pill danger" style="font-size:20px;padding:8px 14px">3</div><div style="font-size:12px;color:var(--muted);margin-top:6px">Urgent</div></div>
+            <div style="text-align:center;flex:1"><div class="pill warn" style="font-size:20px;padding:8px 14px">1</div><div style="font-size:12px;color:var(--muted);margin-top:6px">Snoozed</div></div>
+            <div style="text-align:center;flex:1"><div class="pill" style="font-size:20px;padding:8px 14px">12m</div><div style="font-size:12px;color:var(--muted);margin-top:6px">Next scan</div></div>
+          </div>
+          <div class="card">
+            <h2>Need a reply</h2>
+            <div class="chat"><div class="avatar">JD</div><div class="chat-body"><div class="chat-name">John Doe</div><div class="chat-meta">4.5 hours since their last message</div></div><button class="btn small">Done</button></div>
+            <div class="chat"><div class="avatar">AS</div><div class="chat-body"><div class="chat-name">Alice Smith</div><div class="chat-meta">8.2 hours since their last message</div></div><button class="btn small">Done</button></div>
+            <div class="chat"><div class="avatar">+</div><div class="chat-body"><div class="chat-name">+32 4... 9191</div><div class="chat-meta">12 hours since their last message</div></div><button class="btn small">Done</button></div>
+          </div>
+        </section>
+        <section class="page hidden" data-page="chats">
+          <h2 style="margin-bottom:12px">All chats</h2>
+          <div class="card">
+            <div class="chat"><div class="avatar">JD</div><div class="chat-body"><div class="chat-name">John Doe</div><div class="chat-meta">4.5h • needs reply</div></div><button class="btn small secondary">Ignore</button></div>
+            <div class="chat"><div class="avatar">AS</div><div class="chat-body"><div class="chat-name">Alice Smith</div><div class="chat-meta">8.2h • needs reply</div></div><button class="btn small secondary">Ignore</button></div>
+            <div class="chat"><div class="avatar">+</div><div class="chat-body"><div class="chat-name">+32 4... 9191</div><div class="chat-meta">12h</div></div><button class="btn small secondary">Ignore</button></div>
+            <div class="chat"><div class="avatar">F</div><div class="chat-body"><div class="chat-name">Family group</div><div class="chat-meta">1d • ignored</div></div><button class="btn small">Unignore</button></div>
+          </div>
+        </section>
+        <section class="page hidden" data-page="qr">
+          <div class="card" style="text-align:center">
+            <h2>Link WhatsApp</h2>
+            <p class="pill success" style="margin:8px 0">Connected</p>
+            <p style="font-size:14px;color:var(--muted)">WhatsApp is linked and ready.</p>
+            <button class="btn" style="margin-top:14px">Reconnect</button>
+          </div>
+        </section>
+        <section class="page hidden" data-page="settings">
+          <div class="card">
+            <h2>Settings</h2>
+            <label class="label">Scan interval (min)</label><input class="input" value="30" />
+            <label class="label">Chat limit</label><input class="input" value="50" />
+            <label class="label">Threshold (h)</label><input class="input" value="3" />
+            <button class="btn" style="margin-top:16px;width:100%">Save</button>
+          </div>
+          <div class="card">
+            <h3>Notifications</h3>
+            <div class="row"><span>Web Push</span><button class="btn small">Subscribe</button></div>
+            <div class="row"><span>ntfy</span><button class="btn secondary small">Setup</button></div>
+            <div class="row"><span>Gotify</span><button class="btn secondary small">Setup</button></div>
+          </div>
+        </section>
+        <section class="page hidden" data-page="history">
+          <h2>History</h2>
+          <div class="card">
+            <h3>Reminders sent</h3>
+            <div class="row"><span>John Doe</span><span>2h ago</span></div>
+            <div class="row"><span>Alice Smith</span><span>yesterday</span></div>
+          </div>
+          <div class="card">
+            <h3>Scans</h3>
+            <div class="row"><span>50 checked, 3 reminders</span><span>12m ago</span></div>
+          </div>
+        </section>
+        <section class="page hidden" data-page="ignored">
+          <h2>Ignored chats</h2>
+          <div class="card">
+            <div class="chat"><div class="avatar">F</div><div class="chat-body"><div class="chat-name">Family group</div></div><button class="btn small">Unignore</button></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Variant C: one-page + floating actions -->
+    <div class="variant-c hidden">
+      <div class="statusbar">Respondr <span class="pill success" style="margin-left:auto">connected</span></div>
+      <main id="main-c" style="padding-bottom:80px">
+        <div class="section">
+          <h2>Status</h2>
+          <div class="card" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div><strong style="font-size:24px">3</strong><div style="font-size:12px;color:var(--muted)">Need reply</div></div>
+            <div><strong style="font-size:24px">1</strong><div style="font-size:12px;color:var(--muted)">Snoozed</div></div>
+            <div style="grid-column:span 2"><strong>Next scan:</strong> 12 minutes</div>
+          </div>
+        </div>
+        <div class="section">
+          <h2>Chats needing a reply</h2>
+          <div class="card">
+            <div class="chat"><div class="avatar">JD</div><div class="chat-body"><div class="chat-name">John Doe</div><div class="chat-meta">4.5h ago</div></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+            <div class="chat"><div class="avatar">AS</div><div class="chat-body"><div class="chat-name">Alice Smith</div><div class="chat-meta">8.2h ago</div></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+            <div class="chat"><div class="avatar">+</div><div class="chat-body"><div class="chat-name">+32 4... 9191</div><div class="chat-meta">12h ago</div></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+          </div>
+        </div>
+        <div class="section">
+          <h2>Link WhatsApp</h2>
+          <div class="card" style="display:flex;align-items:center;justify-content:space-between">
+            <div><span class="pill success">Connected</span><div style="font-size:13px;color:var(--muted);margin-top:6px">No QR needed right now.</div></div>
+            <button class="btn secondary">Reconnect</button>
+          </div>
+        </div>
+        <div class="section">
+          <h2>Settings</h2>
+          <div class="card">
+            <div class="row"><span>Scan interval</span><span class="pill">30 min</span></div>
+            <div class="row"><span>Chat limit</span><span class="pill">50</span></div>
+            <div class="row"><span>Threshold</span><span class="pill">3 h</span></div>
+            <button class="btn" style="width:100%;margin-top:12px">Edit settings</button>
+          </div>
+        </div>
+        <div class="section">
+          <h2>Notifications</h2>
+          <div class="card">
+            <div class="row"><span>Web Push</span><button class="btn small">Subscribe</button></div>
+            <div class="row"><span>ntfy</span><button class="btn secondary small">Setup</button></div>
+            <div class="row"><span>Gotify</span><button class="btn secondary small">Setup</button></div>
+          </div>
+        </div>
+      </main>
+      <div class="quick-actions"><button class="fab">+</button></div>
+    </div>
+  </div>
+
+  <script>
+    const pages = { a: 'dashboard', b: 'dashboard', c: 'one-page' };
+
+    function setVariant(v) {
+      document.querySelectorAll('.variant-a, .variant-b, .variant-c').forEach(el => el.classList.add('hidden'));
+      document.querySelector('.variant-' + v).classList.remove('hidden');
+      if (v !== 'c') showPage(v, 'dashboard');
+    }
+
+    function showPage(variant, page) {
+      const main = document.getElementById('main-' + variant);
+      main.querySelectorAll('[data-page]').forEach(p => p.classList.add('hidden'));
+      main.querySelector('[data-page="' + page + '"]').classList.remove('hidden');
+
+      const tabs = document.querySelectorAll('.variant-' + variant + ' .tab, .variant-' + variant + ' .drawer a');
+      tabs.forEach(t => t.classList.remove('active'));
+      const active = document.querySelector('.variant-' + variant + ' [data-tab="' + page + '"], .variant-' + variant + ' [data-menu="' + page + '"]');
+      if (active) active.classList.add('active');
+      pages[variant] = page;
+    }
+
+    function toggleDrawer(open) {
+      document.querySelector('.variant-b .drawer').classList.toggle('open', open);
+      document.querySelector('.variant-b .overlay').classList.toggle('show', open);
+    }
+
+    // initial
+    setVariant('a');
+  </script>
+</body>
+</html>
