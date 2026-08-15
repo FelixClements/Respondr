@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Respondr — layout prototype</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --accent: #4f46e5;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warn: #f59e0b;
+      --border: #e2e8f0;
+      --radius: 14px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #111827;
+      color: var(--text);
+    }
+    .device {
+      max-width: 414px;
+      margin: 20px auto;
+      min-height: 760px;
+      background: var(--bg);
+      border-radius: 32px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+      position: relative;
+    }
+    .statusbar {
+      height: 44px;
+      background: var(--card);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+    }
+    main { flex: 1; padding: 14px; padding-bottom: 120px; overflow-y: auto; }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    h2 { font-size: 18px; margin: 0 0 10px; }
+    h3 { font-size: 14px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #e0e7ff;
+      color: var(--accent);
+    }
+    .pill.success { background: #dcfce7; color: #166534; }
+    .pill.danger { background: #fee2e2; color: #991b1b; }
+    .pill.warn { background: #fef3c7; color: #92400e; }
+    .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: white;
+    }
+    .btn.secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    .btn.small { padding: 5px 8px; font-size: 11px; }
+    .tabbar {
+      display: flex;
+      justify-content: space-around;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      padding: 8px 0;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .tab { cursor: pointer; }
+    .tab.active { color: var(--accent); font-weight: 600; }
+
+    .chat {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .chat:last-child { border-bottom: none; }
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #e0e7ff;
+      color: var(--accent);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .chat-body { flex: 1; }
+    .chat-name { font-weight: 600; font-size: 14px; }
+    .chat-meta { font-size: 12px; color: var(--muted); }
+    .chat-actions { display: flex; gap: 4px; }
+
+    .chat-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .chat-card .avatar { width: 44px; height: 44px; }
+    .chat-card .chat-body { flex: 1; }
+    .chat-card .chat-name { font-size: 15px; }
+
+    .compact-list .chat { padding: 8px 0; }
+    .compact-list .chat .avatar { display: none; }
+    .compact-list .chat-name { display: inline; margin-right: 6px; }
+    .compact-list .chat-meta { display: inline; }
+    .compact-list .chat-actions { margin-left: auto; }
+
+    .hidden { display: none !important; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .stat-row { display: flex; justify-content: space-between; gap: 8px; }
+    .stat { text-align: center; flex: 1; background: var(--card); border-radius: var(--radius); padding: 12px 8px; box-shadow: var(--shadow); }
+    .stat .num { display: block; font-size: 22px; font-weight: 700; }
+    .stat .label { font-size: 11px; color: var(--muted); }
+
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-grid .stat { background: var(--card); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); text-align: left; }
+    .stat-grid .num { font-size: 24px; }
+    .stat-grid .label { font-size: 12px; }
+
+    .minimal .urgent-row { display: flex; justify-content: space-between; align-items: center; }
+    .minimal .urgent-num { font-size: 32px; font-weight: 700; color: var(--danger); }
+
+    .switcher {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.85);
+      color: white;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      z-index: 200;
+      max-width: 90vw;
+    }
+    .switcher label { cursor: pointer; }
+    .switcher select {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="switcher">
+    <label>Dashboard:
+      <select id="dash" onchange="update()">
+        <option value="row" selected>Stat row</option>
+        <option value="grid">Card grid</option>
+        <option value="minimal">Minimal</option>
+      </select>
+    </label>
+    <label>Chats:
+      <select id="chats" onchange="update()">
+        <option value="card" selected>Cards</option>
+        <option value="compact">Compact list</option>
+        <option value="avatars">List + avatars</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="device">
+    <div class="statusbar">Respondr</div>
+    <main>
+      <div class="page active" id="home">
+        <div id="dashboard-row">
+          <div class="card">
+            <h2>Dashboard</h2>
+            <span class="pill success">WhatsApp connected</span>
+            <div class="stat-row" style="margin-top:14px">
+              <div class="stat"><span class="num" style="color:var(--danger)">2</span><span class="label">Need reply</span></div>
+              <div class="stat"><span class="num" style="color:var(--warn)">1</span><span class="label">Snoozed</span></div>
+              <div class="stat"><span class="num">12m</span><span class="label">Next scan</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Recent reminders</h3>
+            <div style="font-size:14px; margin:6px 0"><strong>John Doe</strong> · 2h ago</div>
+            <div style="font-size:14px; margin:6px 0"><strong>Alice Smith</strong> · 5h ago</div>
+          </div>
+        </div>
+
+        <div id="dashboard-grid" class="hidden">
+          <div class="card">
+            <h2>Dashboard</h2>
+            <span class="pill success">WhatsApp connected</span>
+          </div>
+          <div class="stat-grid">
+            <div class="stat"><span class="num" style="color:var(--danger)">2</span><span class="label">Need reply</span></div>
+            <div class="stat"><span class="num" style="color:var(--warn)">1</span><span class="label">Snoozed</span></div>
+            <div class="stat"><span class="num">50</span><span class="label">Chats scanned</span></div>
+            <div class="stat"><span class="num">12m</span><span class="label">Next scan</span></div>
+          </div>
+          <div class="card">
+            <h3>Recent reminders</h3>
+            <div style="font-size:14px; margin:6px 0"><strong>John Doe</strong> · 2h ago</div>
+            <div style="font-size:14px; margin:6px 0"><strong>Alice Smith</strong> · 5h ago</div>
+          </div>
+        </div>
+
+        <div id="dashboard-minimal" class="hidden">
+          <div class="card minimal">
+            <div class="urgent-row">
+              <div>
+                <h2 style="margin:0">Need reply</h2>
+                <span class="pill success" style="margin-top:4px;display:inline-block">WhatsApp connected</span>
+              </div>
+              <div class="urgent-num">2</div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Next scan · 12m</h3>
+            <div style="font-size:14px; margin-top:8px"><strong>John Doe</strong> · 2h ago</div>
+            <div style="font-size:14px; margin-top:6px"><strong>Alice Smith</strong> · 5h ago</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="chats-page">
+        <h2 style="margin-bottom:10px">Chats</h2>
+
+        <div id="chats-card" class="chats-view">
+          <div class="chat-card"><div class="avatar">JD</div><div class="chat-body"><div class="chat-name">John Doe</div><div class="chat-meta">4.5h · needs reply</div></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+          <div class="chat-card"><div class="avatar">AS</div><div class="chat-body"><div class="chat-name">Alice Smith</div><div class="chat-meta">8.2h · needs reply</div></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+          <div class="chat-card"><div class="avatar">+</div><div class="chat-body"><div class="chat-name">+32 4... 9191</div><div class="chat-meta">12h</div></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+          <div class="chat-card"><div class="avatar">F</div><div class="chat-body"><div class="chat-name">Family group</div><div class="chat-meta">1d · ignored</div></div><div class="chat-actions"><button class="btn small">Unignore</button></div></div>
+        </div>
+
+        <div id="chats-compact" class="chats-view hidden compact-list card">
+          <div class="chat"><div class="chat-body"><span class="chat-name">John Doe</span><span class="chat-meta">4.5h · needs reply</span></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+          <div class="chat"><div class="chat-body"><span class="chat-name">Alice Smith</span><span class="chat-meta">8.2h · needs reply</span></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+          <div class="chat"><div class="chat-body"><span class="chat-name">+32 4... 9191</span><span class="chat-meta">12h</span></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+          <div class="chat"><div class="chat-body"><span class="chat-name">Family group</span><span class="chat-meta">1d · ignored</span></div><div class="chat-actions"><button class="btn small">Unignore</button></div></div>
+        </div>
+
+        <div id="chats-avatars" class="chats-view hidden card">
+          <div class="chat"><div class="avatar">JD</div><div class="chat-body"><div class="chat-name">John Doe</div><div class="chat-meta">4.5h · needs reply</div></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+          <div class="chat"><div class="avatar">AS</div><div class="chat-body"><div class="chat-name">Alice Smith</div><div class="chat-meta">8.2h · needs reply</div></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+          <div class="chat"><div class="avatar">+</div><div class="chat-body"><div class="chat-name">+32 4... 9191</div><div class="chat-meta">12h</div></div><div class="chat-actions"><button class="btn small">Done</button><button class="btn small secondary">Ignore</button></div></div>
+          <div class="chat"><div class="avatar">F</div><div class="chat-body"><div class="chat-name">Family group</div><div class="chat-meta">1d · ignored</div></div><div class="chat-actions"><button class="btn small">Unignore</button></div></div>
+        </div>
+      </div>
+    </main>
+
+    <div class="tabbar">
+      <div class="tab active" data-tab="home" onclick="show('home')">Home</div>
+      <div class="tab" data-tab="chats" onclick="show('chats')">Chats</div>
+      <div class="tab" data-tab="settings" onclick="show('settings')">Settings</div>
+    </div>
+  </div>
+
+  <script>
+    function show(tab) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      if (tab === 'settings') return;
+      document.getElementById(tab === 'home' ? 'home' : 'chats-page').classList.add('active');
+      document.querySelector('.tab[data-tab="' + tab + '"]').classList.add('active');
+    }
+
+    function update() {
+      const dash = document.getElementById('dash').value;
+      const chat = document.getElementById('chats').value;
+
+      ['dashboard-row', 'dashboard-grid', 'dashboard-minimal'].forEach(id => document.getElementById(id).classList.add('hidden'));
+      document.getElementById('dashboard-' + (dash === 'row' ? 'row' : dash)).classList.remove('hidden');
+
+      document.querySelectorAll('.chats-view').forEach(el => el.classList.add('hidden'));
+      document.getElementById('chats-' + chat).classList.remove('hidden');
+    }
+
+    update();
+  </script>
+</body>
+</html>
