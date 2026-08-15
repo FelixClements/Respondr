@@ -27,7 +27,7 @@
 
   window.toast = toast;
 
-  document.querySelectorAll('.nav-link').forEach(function (a) {
+  document.querySelectorAll('.nav-link, .tabbar .tab').forEach(function (a) {
     if (a.pathname === window.location.pathname) {
       a.setAttribute('aria-current', 'page');
     }

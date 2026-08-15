@@ -17,6 +17,7 @@
     })();
   </script>
   <link rel="stylesheet" href="/static/style.css?v=5">
+  <link rel="stylesheet" href="/static/mobile.css?v=1">
 </head>
 <body>
   <div class="page">
@@ -82,6 +83,22 @@
     <main>
       <%- body %>
     </main>
+    <% if (user) { %>
+      <nav class="tabbar" aria-label="Mobile navigation" role="tablist">
+        <a class="tab" href="/" data-tab="home" aria-label="Home" role="tab">
+          <svg class="tab-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+          <span>Home</span>
+        </a>
+        <a class="tab" href="/chats" data-tab="chats" aria-label="Chats" role="tab">
+          <svg class="tab-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/><path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/></svg>
+          <span>Chats</span>
+        </a>
+        <a class="tab" href="/settings" data-tab="settings" aria-label="Settings" role="tab">
+          <svg class="tab-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.836 1.372.734 2.942-.948 2.286-.597-.61-1.538-.61-2.135 0-.836 1.372-2.942.734-2.106-2.106.836-1.372-.734-2.942-.948-2.286a1.532 1.532 0 01-2.286-.948c-.836-1.372.734-2.942 2.106-2.106.836 1.372 2.942.734 2.286.948zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+          <span>Settings</span>
+        </a>
+      </nav>
+    <% } %>
     <div id="toast-container"></div>
   </div>
   <script src="/static/status.js?v=4"></script>
