@@ -496,6 +496,10 @@ main {
   text-transform: uppercase;
 }
 
+.chat-row {
+  display: contents;
+}
+
 .chat-info {
   min-width: 0;
   flex: 1;

@@ -144,26 +144,28 @@ const sorted = chats.slice().sort((a, b) => {
       <% const state = getState(chat); const until = getUntil(chat); %>
       <article class="chat-card" data-chat-id="<%= chat.id %>" data-chat-name="<%= chat.name || chat.id %>" data-state="<%= state || '' %>" data-needs-reply="<%= chat.needsReply ? '1' : '' %>">
         <div class="chat-main">
-          <div class="chat-avatar" aria-hidden="true"><%= (chat.name || chat.id).slice(0, 2).toUpperCase() %></div>
-          <div class="chat-info">
-            <div class="chat-name-row">
-              <div class="chat-name"><%= chat.name || chat.id %></div>
-              <div class="chat-status"><%- badgeHtml(state, chat.needsReply) %></div>
-            </div>
-            <div class="chat-meta">
-              <% if (chat.lastMessage && !chat.lastMessage.fromMe) { %>
-                <span class="time-ago">Waiting <%= formatAgo(chat.hoursSince) %></span>
-              <% } else if (chat.lastMessage) { %>
-                <span>Last message <%= formatAgo(chat.hoursSince) %> ago</span>
-              <% } else { %>
-                <span>No recent messages</span>
-              <% } %>
-              <% if (chat.lastMessage) { %>
-                <span><%= chat.lastMessage.fromMe ? 'From you' : 'Inbound' %></span>
-              <% } %>
-              <% if (chat.lastMessage && chat.lastMessage.hasReactionFromMe) { %>
-                <span class="reaction-tag">Reacted</span>
-              <% } %>
+          <div class="chat-row">
+            <div class="chat-avatar" aria-hidden="true"><%= (chat.name || chat.id).slice(0, 2).toUpperCase() %></div>
+            <div class="chat-info">
+              <div class="chat-name-row">
+                <div class="chat-name"><%= chat.name || chat.id %></div>
+                <div class="chat-status"><%- badgeHtml(state, chat.needsReply) %></div>
+              </div>
+              <div class="chat-meta">
+                <% if (chat.lastMessage && !chat.lastMessage.fromMe) { %>
+                  <span class="time-ago">Waiting <%= formatAgo(chat.hoursSince) %></span>
+                <% } else if (chat.lastMessage) { %>
+                  <span>Last message <%= formatAgo(chat.hoursSince) %> ago</span>
+                <% } else { %>
+                  <span>No recent messages</span>
+                <% } %>
+                <% if (chat.lastMessage) { %>
+                  <span><%= chat.lastMessage.fromMe ? 'From you' : 'Inbound' %></span>
+                <% } %>
+                <% if (chat.lastMessage && chat.lastMessage.hasReactionFromMe) { %>
+                  <span class="reaction-tag">Reacted</span>
+                <% } %>
+              </div>
             </div>
           </div>
           <div class="chat-actions" data-state="<%= state || '' %>">

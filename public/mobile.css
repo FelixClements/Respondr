@@ -166,6 +166,92 @@
   .connection-header {
     display: none;
   }
+
+  .chat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .chat-card {
+    position: relative;
+    overflow: hidden;
+    padding: 0;
+    border-radius: var(--radius);
+  }
+
+  .chat-main {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .chat-row {
+    display: flex;
+    flex: 0 0 100%;
+    width: 100%;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    transition: transform 0.2s ease;
+    background: var(--surface);
+    z-index: 1;
+  }
+
+  .chat-row.swiped {
+    transform: translateX(-100px);
+  }
+
+  .chat-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  .chat-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .chat-name {
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chat-actions {
+    flex: 0 0 100px;
+    width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0 0.5rem;
+    z-index: 0;
+  }
+
+  .chat-actions .btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+  }
+
+  .chat-actions svg {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .chat-extras {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
 }
 
 @media (min-width: 641px) {

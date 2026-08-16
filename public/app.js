@@ -109,6 +109,8 @@
       actionsEl.innerHTML = actionFormsHtml(state, card.dataset.chatId, card.dataset.chatName || card.dataset.chatId);
       bindChatForms(actionsEl);
     }
+    const row = card.querySelector('.chat-row');
+    if (row) row.classList.remove('swiped');
     const extras = card.querySelector('.chat-extras');
     if (!extras) return;
     const existing = extras.querySelector('.state-note');
@@ -266,6 +268,51 @@
     });
   }
 
+  function initChatSwipe() {
+    const cards = document.querySelectorAll('.chat-card');
+    if (!cards.length) return;
+
+    cards.forEach(function (card) {
+      const row = card.querySelector('.chat-row');
+      if (!row) return;
+
+      let startX = 0;
+      let currentX = 0;
+      let isSwiping = false;
+
+      row.addEventListener('touchstart', function (e) {
+        startX = e.touches[0].clientX;
+        currentX = startX;
+        isSwiping = true;
+      }, { passive: true });
+
+      row.addEventListener('touchmove', function (e) {
+        if (!isSwiping) return;
+        currentX = e.touches[0].clientX;
+      }, { passive: true });
+
+      row.addEventListener('touchend', function () {
+        if (!isSwiping) return;
+        isSwiping = false;
+        const dx = currentX - startX;
+        if (dx < -50) {
+          row.classList.add('swiped');
+        } else if (dx > 50) {
+          row.classList.remove('swiped');
+        }
+      });
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.chat-card')) {
+        document.querySelectorAll('.chat-row.swiped').forEach(function (row) {
+          row.classList.remove('swiped');
+        });
+      }
+    });
+  }
+
+  initChatSwipe();
   initPwa();
   initInstallPrompt();
 })();
