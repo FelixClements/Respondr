@@ -105,10 +105,75 @@
     margin-bottom: 1rem;
     display: block;
   }
+
+  .mobile-not-linked {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .mobile-not-linked h3 {
+    margin: 0 0 0.5rem;
+    color: var(--warning);
+  }
+
+  .mobile-not-linked ol {
+    padding-left: 1.25rem;
+    margin: 0.5rem 0;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+
+  .mobile-not-linked li {
+    margin-bottom: 0.5rem;
+  }
+
+  .metrics {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .metric.metric-total {
+    display: none;
+  }
+
+  .metric {
+    flex: 1;
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .metric .metric-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 0.25rem;
+  }
+
+  .metric .metric-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .metric.urgent .metric-value {
+    color: var(--danger);
+  }
+
+  .connection-header {
+    display: none;
+  }
 }
 
 @media (min-width: 641px) {
   .tabbar {
+    display: none;
+  }
+
+  .mobile-not-linked {
     display: none;
   }
 }

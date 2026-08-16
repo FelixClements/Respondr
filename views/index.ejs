@@ -3,26 +3,46 @@
   <p>Overview of your WhatsApp response reminders</p>
 </div>
 
+<% if (!status.isReady) { %>
+  <div class="mobile-not-linked" id="not-linked-banner">
+    <h3>WhatsApp not linked</h3>
+    <ol>
+      <li>Open Respondr in a desktop browser.</li>
+      <li>Go to <strong>Link WhatsApp</strong> on the desktop.</li>
+      <li>On this phone, open WhatsApp → Settings → Linked devices → Link a device.</li>
+      <li>Scan the desktop QR code.</li>
+      <li>Return here and tap refresh once linked.</li>
+    </ol>
+    <button id="refresh-not-linked" class="btn btn-primary" type="button">I’ve linked, refresh</button>
+    <script>
+      (function () {
+        const btn = document.getElementById('refresh-not-linked');
+        if (btn) btn.addEventListener('click', function () { window.location.reload(); });
+      })();
+    </script>
+  </div>
+<% } %>
+
 <section class="metrics" aria-label="Dashboard metrics">
-  <article class="metric">
+  <article class="metric metric-total">
     <div class="metric-value"><%= typeof stats.total === 'number' ? stats.total : '—' %></div>
     <div class="metric-label">Active chats</div>
   </article>
-  <article class="metric <%= (stats.urgent || 0) > 0 ? 'urgent' : '' %>">
+  <article class="metric metric-urgent <%= (stats.urgent || 0) > 0 ? 'urgent' : '' %>">
     <div class="metric-value"><%= typeof stats.urgent === 'number' ? stats.urgent : '—' %></div>
-    <div class="metric-label">Urgent / Overdue</div>
+    <div class="metric-label">Need reply</div>
   </article>
-  <article class="metric">
+  <article class="metric metric-snoozed">
     <div class="metric-value"><%= stats.snoozed %></div>
-    <div class="metric-label">Ignored / Done</div>
+    <div class="metric-label">Snoozed</div>
   </article>
-  <article class="metric">
+  <article class="metric metric-next">
     <div class="metric-value" data-next-scan="<%= nextScan ? new Date(nextScan).toISOString() : '' %>" data-countdown>—</div>
     <div class="metric-label">Next scan</div>
   </article>
 </section>
 
-<div class="card connection-header">
+<div class="card connection-header" id="connection-header">
   <div>
     <h3 style="margin:0 0 0.25rem">WhatsApp</h3>
     <p class="muted" style="margin:0">Status: <%= status.status %> (ready: <%= status.isReady %>)</p>
