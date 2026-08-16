@@ -25,27 +25,63 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  if (
+  const isStatic =
     url.pathname.startsWith('/static/') ||
     url.pathname === '/manifest.json' ||
     url.pathname.endsWith('.png') ||
-    url.pathname.endsWith('.svg')
-  ) {
+    url.pathname.endsWith('.svg');
+
+  const isPage =
+    url.pathname === '/' ||
+    url.pathname === '/chats' ||
+    url.pathname === '/settings' ||
+    url.pathname === '/notifications' ||
+    url.pathname === '/logs' ||
+    url.pathname === '/history' ||
+    url.pathname === '/ignored' ||
+    url.pathname === '/qr' ||
+    url.pathname === '/login';
+
+  const isApi = url.pathname.startsWith('/api/');
+
+  if (!isStatic && !isPage && !isApi) return;
+
+  function fromCache(request) {
+    return caches.match(request);
+  }
+
+  function updateCache(request, response) {
+    if (response && response.status === 200 && response.type === 'basic') {
+      const clone = response.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+    }
+  }
+
+  // Static assets: cache-first, update in background
+  if (isStatic) {
     event.respondWith(
-      caches.match(event.request).then((cached) => {
-        const network = fetch(event.request)
+      fromCache(event.request).then((cached) => {
+        const fetched = fetch(event.request)
           .then((response) => {
-            if (response && response.status === 200 && response.type === 'basic') {
-              const clone = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-            }
+            updateCache(event.request, response);
             return response;
           })
           .catch(() => cached);
-        return cached || network;
+        return cached || fetched;
       })
     );
+    return;
   }
+
+  // Pages and API: network-first with cache fallback
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        updateCache(event.request, response);
+        return response;
+      })
+      .catch(() => fromCache(event.request))
+  );
 });
 
 self.addEventListener('push', (event) => {

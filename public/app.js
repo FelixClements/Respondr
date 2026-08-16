@@ -469,6 +469,22 @@
     });
   }
 
+  function initOfflineStatus() {
+    function update() {
+      if (!navigator.onLine) {
+        toast('You are offline. Actions will retry when connection returns.', 'warning');
+      }
+    }
+    window.addEventListener('online', function () {
+      toast('Back online', 'success');
+    });
+    window.addEventListener('offline', function () {
+      toast('You are offline. Some features may be limited.', 'warning');
+    });
+    update();
+  }
+
+  initOfflineStatus();
   initChatSwipe();
   initPwa();
   initInstallPrompt();
