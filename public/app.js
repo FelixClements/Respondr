@@ -147,6 +147,7 @@
         const messages = { done: 'Marked as done', ignore: 'Chat ignored', undone: 'Done state reset', unignore: 'Chat unignored' };
         toast(messages[command], 'success');
         setChatState(card, nextState);
+        askForPushAfterAction(command);
       })
       .catch(function () {
         toast('Action failed. Please try again.', 'error');
@@ -192,7 +193,7 @@
     window.addEventListener('load', function () {
       navigator.serviceWorker.register('/sw.js')
         .then(function (registration) {
-          initPush(registration);
+          window.respondrSwRegistration = registration;
         })
         .catch(function (err) {
           console.error('Service worker registration failed:', err);
@@ -200,39 +201,157 @@
     });
   }
 
-  function initPush(registration) {
-    if (!('PushManager' in window)) return;
+  function getVapidKey() {
     const keyMeta = document.querySelector('meta[name="vapid-public-key"]');
-    const vapidKey = keyMeta ? keyMeta.content : '';
-    if (!vapidKey) return;
-
-    registration.pushManager.getSubscription().then(function (subscription) {
-      if (subscription) {
-        sendSubscriptionToServer(subscription);
-      } else {
-        return registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey)
-        }).then(function (sub) {
-          sendSubscriptionToServer(sub);
-        }).catch(function (err) {
-          console.error('Push subscription failed:', err);
-        });
-      }
-    });
+    return keyMeta ? keyMeta.content : '';
   }
 
   function sendSubscriptionToServer(subscription) {
-    fetch('/api/push/subscribe', {
+    if (!subscription) return Promise.resolve();
+    return fetch('/api/push/subscribe', {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(subscription)
     }).then(function (res) {
       if (!res.ok) throw new Error('Subscription save failed');
-    }).catch(function (err) {
-      console.error('Failed to send push subscription:', err);
     });
+  }
+
+  function sendUnsubscribeToServer(subscription) {
+    if (!subscription) return Promise.resolve();
+    return fetch('/api/push/unsubscribe', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint: subscription.endpoint })
+    }).then(function (res) {
+      if (!res.ok) throw new Error('Unsubscribe failed');
+    });
+  }
+
+  function subscribeToPush() {
+    if (!('PushManager' in window)) return Promise.reject('Push not supported');
+    const registration = window.respondrSwRegistration;
+    if (!registration) return Promise.reject('No service worker');
+    const vapidKey = getVapidKey();
+    if (!vapidKey) return Promise.reject('No VAPID key');
+
+    return registration.pushManager.getSubscription().then(function (existing) {
+      if (existing) return existing;
+      return registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey)
+      });
+    }).then(function (subscription) {
+      return sendSubscriptionToServer(subscription).then(function () { return subscription; });
+    });
+  }
+
+  function unsubscribeFromPush() {
+    const registration = window.respondrSwRegistration;
+    if (!registration) return Promise.reject('No service worker');
+    return registration.pushManager.getSubscription().then(function (subscription) {
+      if (!subscription) return null;
+      return subscription.unsubscribe().then(function () {
+        return sendUnsubscribeToServer(subscription).then(function () { return null; });
+      });
+    });
+  }
+
+  let pushAskedThisSession = false;
+
+  function askForPushAfterAction(command) {
+    if (command !== 'done') return;
+    if (!('PushManager' in window)) return;
+    if (pushAskedThisSession) return;
+    if (Notification.permission === 'granted') {
+      subscribeToPush().catch(function () {});
+      return;
+    }
+    if (Notification.permission === 'denied') return;
+
+    pushAskedThisSession = true;
+    if (window.confirm('Get a push reminder next time this chat needs a reply?')) {
+      subscribeToPush().then(function () {
+        toast('Push notifications enabled', 'success');
+      }).catch(function (err) {
+        console.error('Push subscribe failed:', err);
+      });
+    }
+  }
+
+  function initPushSettings() {
+    const statusEl = document.getElementById('push-status');
+    const btn = document.getElementById('push-subscribe');
+    const testBtn = document.getElementById('push-test');
+    if (!statusEl || !btn) return;
+
+    function updateStatus() {
+      if (!('PushManager' in window)) {
+        statusEl.textContent = 'Not supported';
+        btn.disabled = true;
+        return;
+      }
+      if (!window.respondrSwRegistration) {
+        statusEl.textContent = 'Service worker not registered yet';
+        return;
+      }
+      const permission = Notification.permission;
+      window.respondrSwRegistration.pushManager.getSubscription().then(function (sub) {
+        if (sub && permission === 'granted') {
+          statusEl.textContent = 'Subscribed';
+          btn.textContent = 'Unsubscribe';
+          btn.disabled = false;
+        } else if (permission === 'denied') {
+          statusEl.textContent = 'Notifications blocked. Use ntfy/Gotify or update browser settings.';
+          btn.textContent = 'Re-subscribe';
+          btn.disabled = true;
+        } else {
+          statusEl.textContent = 'Not subscribed';
+          btn.textContent = 'Subscribe';
+          btn.disabled = false;
+        }
+      });
+    }
+
+    btn.addEventListener('click', function () {
+      if (btn.textContent === 'Unsubscribe') {
+        unsubscribeFromPush().then(function () {
+          toast('Unsubscribed from push', 'info');
+          updateStatus();
+        }).catch(function (err) {
+          console.error(err);
+        });
+      } else {
+        subscribeToPush().then(function () {
+          toast('Subscribed to push', 'success');
+          updateStatus();
+        }).catch(function (err) {
+          console.error(err);
+        });
+      }
+    });
+
+    if (testBtn) {
+      testBtn.addEventListener('click', function () {
+        fetch('/api/push/test', { method: 'POST' })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            const resultEl = document.getElementById('push-test-result');
+            if (resultEl) resultEl.textContent = JSON.stringify(data, null, 2);
+          })
+          .catch(function (err) {
+            toast('Push test failed', 'error');
+          });
+      });
+    }
+
+    updateStatus();
+    if (window.respondrSwRegistration) {
+      window.respondrSwRegistration.pushManager.getSubscription().then(function () { updateStatus(); });
+    }
+    setTimeout(updateStatus, 1000);
   }
 
   function urlBase64ToUint8Array(base64String) {
@@ -353,4 +472,5 @@
   initChatSwipe();
   initPwa();
   initInstallPrompt();
+  initPushSettings();
 })();

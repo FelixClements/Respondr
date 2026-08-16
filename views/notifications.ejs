@@ -51,7 +51,15 @@
 </div>
 
 <div class="card" style="margin-top:1rem">
-  <h3>Test</h3>
+  <h3>Web Push</h3>
+  <p class="muted">Status: <span id="push-status">Checking…</span></p>
+  <button id="push-subscribe" class="btn btn-primary" type="button">Subscribe</button>
+  <button id="push-test" class="btn btn-ghost" type="button">Send test push</button>
+  <pre id="push-test-result" class="code-block" style="display:none"></pre>
+</div>
+
+<div class="card" style="margin-top:1rem">
+  <h3>Test NTFY/Gotify</h3>
   <button id="test-notification" class="btn btn-ghost" type="button">Send test notification</button>
   <pre id="test-result" class="code-block" style="display:none"></pre>
 </div>
