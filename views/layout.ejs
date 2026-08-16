@@ -101,6 +101,25 @@
     <% } %>
     <div id="toast-container"></div>
   </div>
+  <div id="install-banner" class="install-banner mobile-only" style="display:none" role="banner" aria-label="Install app">
+    <div class="install-banner-main">
+      <p id="install-text">Add Respondr to your home screen for the best experience.</p>
+      <div class="install-banner-actions">
+        <button id="install-cta" class="btn btn-primary" type="button">Install</button>
+        <button id="install-show-how" class="btn btn-ghost" type="button" style="display:none">Show me how</button>
+        <button id="install-dismiss" class="btn btn-ghost" type="button" aria-label="Dismiss">×</button>
+      </div>
+    </div>
+    <div id="install-instructions" class="install-instructions" style="display:none">
+      <ol>
+        <li>Tap the <strong>Share</strong> icon in Safari’s toolbar.</li>
+        <li>Scroll and tap <strong>Add to Home Screen</strong>.</li>
+        <li>Tap <strong>Add</strong>.</li>
+      </ol>
+      <button id="install-instructions-close" class="btn btn-ghost" type="button">Close</button>
+    </div>
+  </div>
+
   <script src="/static/status.js?v=4"></script>
   <script src="/static/app.js?v=3"></script>
 </body>

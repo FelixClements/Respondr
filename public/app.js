@@ -243,29 +243,67 @@
   }
 
   function initInstallPrompt() {
-    const installBtn = document.getElementById('pwa-install');
-    if (!installBtn) return;
+    const banner = document.getElementById('install-banner');
+    const text = document.getElementById('install-text');
+    const cta = document.getElementById('install-cta');
+    const showHow = document.getElementById('install-show-how');
+    const dismiss = document.getElementById('install-dismiss');
+    const instructions = document.getElementById('install-instructions');
+    const instructionsClose = document.getElementById('install-instructions-close');
+    if (!banner) return;
+
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    if (isStandalone || localStorage.getItem('installBannerDismissed') === '1') return;
+
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(ua);
+    const isAndroid = /Android/.test(ua);
+    if (!isIOS && !isAndroid) return;
 
     let deferredPrompt = null;
+
+    function closeBanner() {
+      banner.style.display = 'none';
+      localStorage.setItem('installBannerDismissed', '1');
+    }
+
+    if (isIOS) {
+      text.textContent = 'Add Respondr to your Home Screen for the best experience.';
+      cta.style.display = 'none';
+      showHow.style.display = 'inline-flex';
+      banner.style.display = 'block';
+    }
+
+    if (isAndroid) {
+      cta.style.display = 'inline-flex';
+      showHow.style.display = 'none';
+    }
+
     window.addEventListener('beforeinstallprompt', function (e) {
       e.preventDefault();
       deferredPrompt = e;
-      installBtn.style.display = 'inline-flex';
+      banner.style.display = 'block';
     });
 
-    installBtn.addEventListener('click', function () {
+    cta.addEventListener('click', function () {
       if (!deferredPrompt) return;
       deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(function (choice) {
-        installBtn.style.display = 'none';
-        deferredPrompt = null;
+      deferredPrompt.userChoice.then(function () {
+        closeBanner();
       });
     });
 
-    window.addEventListener('appinstalled', function () {
-      installBtn.style.display = 'none';
-      deferredPrompt = null;
+    showHow.addEventListener('click', function () {
+      instructions.style.display = 'block';
     });
+
+    instructionsClose.addEventListener('click', function () {
+      instructions.style.display = 'none';
+    });
+
+    dismiss.addEventListener('click', closeBanner);
+
+    window.addEventListener('appinstalled', closeBanner);
   }
 
   function initChatSwipe() {
