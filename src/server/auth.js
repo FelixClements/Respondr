@@ -2,7 +2,8 @@ const crypto = require('crypto');
 const { getCookie, setCookie, deleteCookie } = require('hono/cookie');
 const settingsDb = require('../db/settings');
 
-const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const DESKTOP_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const MOBILE_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const sessions = new Map();
 
 function hashPassword(password) {
@@ -42,9 +43,10 @@ function validateCredentials(username, password) {
   return verifyPassword(password, hash);
 }
 
-function createSession(username) {
+function createSession(username, isMobile = false) {
+  const ttl = isMobile ? MOBILE_SESSION_TTL_MS : DESKTOP_SESSION_TTL_MS;
   const token = crypto.randomBytes(32).toString('hex');
-  sessions.set(token, { username, expiresAt: Date.now() + SESSION_TTL_MS });
+  sessions.set(token, { username, expiresAt: Date.now() + ttl });
   return token;
 }
 
@@ -99,11 +101,12 @@ async function authMiddleware(c, next) {
   return next();
 }
 
-function setSessionCookie(c, token) {
+function setSessionCookie(c, token, isMobile = false) {
+  const maxAge = isMobile ? 60 * 60 * 24 * 30 : 60 * 60 * 24 * 7;
   setCookie(c, 'session', token, {
     httpOnly: true,
     path: '/',
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge,
     sameSite: 'Lax'
   });
 }

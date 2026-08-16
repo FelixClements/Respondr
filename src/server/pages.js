@@ -28,8 +28,9 @@ function buildPageApp() {
     const { username, password } = body;
     try {
       auth.configureAccount(username, password);
-      const token = auth.createSession(username);
-      auth.setSessionCookie(c, token);
+      const isMobile = /Mobile|Android|iPhone|iPad|iPod/i.test(c.req.header('user-agent') || '');
+      const token = auth.createSession(username, isMobile);
+      auth.setSessionCookie(c, token, isMobile);
       return c.redirect('/');
     } catch (err) {
       return page(c, 'setup', { title: 'Create account', error: err.message });
@@ -46,8 +47,9 @@ function buildPageApp() {
     const body = await c.req.parseBody();
     const { username, password } = body;
     if (auth.validateCredentials(username, password)) {
-      const token = auth.createSession(username);
-      auth.setSessionCookie(c, token);
+      const isMobile = /Mobile|Android|iPhone|iPad|iPod/i.test(c.req.header('user-agent') || '');
+      const token = auth.createSession(username, isMobile);
+      auth.setSessionCookie(c, token, isMobile);
       return c.redirect('/');
     }
     return page(c, 'login', { title: 'Login', error: 'Invalid username or password' });
