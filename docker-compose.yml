@@ -1,6 +1,7 @@
 services:
   respondr:
-    image: ${RESPONDR_IMAGE:-ghcr.io/felixclements/respondr:latest}
+    build: .
+    image: respondr:local
     container_name: respondr
     ports:
       - "9595:9595"
@@ -9,7 +10,14 @@ services:
         required: false
     environment:
       - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+      - BETTER_AUTH_URL=http://localhost:9595
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-change-me-use-openssl-rand-base64-32-for-production}
+      - DATA_DIR=/app/data
     volumes:
-      - ./data:/app/data
-      - ./.wwebjs_auth:/app/.wwebjs_auth
+      - respondr_data:/app/data
+      - respondr_wwebjs_auth:/app/.wwebjs_auth
     restart: unless-stopped
+
+volumes:
+  respondr_data:
+  respondr_wwebjs_auth:

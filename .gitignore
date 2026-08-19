@@ -81,6 +81,8 @@ out
 # Nuxt.js build / generate output
 .nuxt
 dist
+web/build
+web/.svelte-kit
 .output
 
 # Gatsby files

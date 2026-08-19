@@ -1,0 +1,74 @@
+@import 'tailwindcss';
+@import 'konsta/svelte/theme.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-brand-primary: #0d6e63;
+  --color-brand-urgent: #ba1a1a;
+  --color-brand-success: #1b873f;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: Roboto, 'Segoe UI', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 0;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+  user-select: none;
+}
+
+.material-symbols-outlined.filled {
+  font-variation-settings:
+    'FILL' 1,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+.md-app {
+  min-height: 100vh;
+}
+
+.md-page {
+  background-color: transparent;
+}
+
+/* Konsta Page defaults to absolute + h-full, which stretches navbar backgrounds. */
+:global(.md-page.k-page) {
+  position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+.pb-tabbar {
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
+
+.safe-areas {
+  padding-bottom: env(safe-area-inset-bottom);
+}

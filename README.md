@@ -14,8 +14,8 @@ By securely mirroring your active conversation queue, the engine checks your cha
 * **Smart Filter Optimization:** Skips archived threads, muted chats, and group messages to prevent notification fatigue.
 * **Secure Session Persistence:** Uses localized authentication state data, so you only scan the QR code once.
 * **Anti-Ban Pattern Mimicry:** Processes only the top recent active chats at spaced-out intervals to simulate natural usage.
-* **Web Dashboard:** Manage settings, view the QR code, ignored chats, and history from a browser.
-* **Flexible Notifications:** Sends reminders via NTFY and/or Gotify.
+* **Web Dashboard:** SvelteKit + Konsta UI PWA — manage settings, chats, notifications, and history from any device.
+* **Flexible Notifications:** Sends reminders via NTFY, Gotify, and Web Push (PWA).
 
 ---
 
@@ -93,11 +93,13 @@ The WhatsApp session is persisted in the `.wwebjs_auth` volume, and the SQLite d
 |---|---|---|
 | `NODE_ENV` | Runtime environment | `development` |
 | `PORT` | Web server port | `9595` |
+| `BETTER_AUTH_URL` | Public URL of the app (for auth cookies) | `http://localhost:9595` |
+| `BETTER_AUTH_SECRET` | Auth signing secret (≥32 chars) | (required) |
 | `SCAN_INTERVAL_MINUTES` | Minutes between automatic scans | `30` |
 | `CHAT_LIMIT` | Number of recent chats to check | `50` |
 | `THRESHOLD_HOURS` | Hours before a chat is considered forgotten | `3` |
-| `DASHBOARD_USER` | Optional HTTP basic auth username | (none) |
-| `DASHBOARD_PASSWORD` | Optional HTTP basic auth password | (none) |
+| `DASHBOARD_USER` | Bootstrap username on first run (if no users exist) | (none) |
+| `DASHBOARD_PASSWORD` | Bootstrap password on first run | (none) |
 | `NTFY_SERVER` | NTFY server URL | `https://ntfy.sh` |
 | `NTFY_TOPIC` | NTFY topic to publish to | (none) |
 | `NTFY_PRIORITY` | NTFY message priority | `3` |
@@ -123,11 +125,37 @@ The WhatsApp session is persisted in the `.wwebjs_auth` volume, and the SQLite d
 ## 🖥️ Local Development
 
 ```bash
+# Install dependencies
 npm install
+npm install --prefix web
+
+# Configure environment
+cp .env.example .env
+# Set BETTER_AUTH_SECRET (openssl rand -base64 32) and optional DASHBOARD_USER/PASSWORD
+
+# Run Better Auth migrations (first time)
+npm run auth:migrate
+
+# Development (Hono API + SvelteKit frontend with hot reload)
+npm run dev
+
+# Production build
+npm run build
 npm start
 ```
 
+The Hono server runs on port `9595` and serves the SvelteKit SPA from `web/build/`. During development, the Vite dev server proxies `/api` to Hono.
+
 > Note: local development requires a Chromium installation. The Docker image installs Chromium automatically.
+
+### Upgrading from pre-0.2.0
+
+The dashboard was rebuilt as a SvelteKit SPA with Better Auth. After upgrading:
+
+1. Run `npm run auth:migrate` to add auth tables to SQLite.
+2. Set `BETTER_AUTH_SECRET` in `.env`.
+3. Re-create your account via `/setup` or set `DASHBOARD_USER` / `DASHBOARD_PASSWORD` for auto-bootstrap.
+4. You will need to log in again (session cookies changed).
 
 ---
 

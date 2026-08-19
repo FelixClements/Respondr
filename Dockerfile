@@ -1,3 +1,22 @@
+FROM node:22-slim AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY web/package*.json ./web/
+RUN npm ci && npm ci --prefix web
+
+COPY . .
+RUN npm run build
+
 FROM node:22-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -5,8 +24,6 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PUPPETEER_ARGS="--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage"
 
-# Install Chromium, native build tools for better-sqlite3, and curl for healthchecks.
-# Build tools are removed after npm ci to keep the image smaller.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     chromium-sandbox \
@@ -41,11 +58,17 @@ RUN npm ci --omit=dev \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
-COPY . .
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/web/build ./web/build
+COPY better-auth.docker.mjs ./better-auth.docker.mjs
+COPY scripts/docker-entrypoint.sh ./docker-entrypoint.sh
+COPY public/icon-192.png public/icon-512.png public/icon-maskable-192.png public/icon-maskable-512.png public/icon.svg public/icon-maskable.svg ./public/
+
+RUN chmod +x ./docker-entrypoint.sh
 
 EXPOSE 9595
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:9595/ || exit 1
+  CMD curl -f http://localhost:9595/ || exit 1
 
-CMD ["npm", "start"]
+CMD ["./docker-entrypoint.sh"]
