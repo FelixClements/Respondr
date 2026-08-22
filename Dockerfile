@@ -62,7 +62,6 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/web/build ./web/build
 COPY better-auth.docker.mjs ./better-auth.docker.mjs
 COPY scripts/docker-entrypoint.sh ./docker-entrypoint.sh
-COPY public/icon-192.png public/icon-512.png public/icon-maskable-192.png public/icon-maskable-512.png public/icon.svg public/icon-maskable.svg ./public/
 
 RUN chmod +x ./docker-entrypoint.sh
 
