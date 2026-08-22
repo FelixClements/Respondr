@@ -1,4 +1,3 @@
-import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
@@ -7,20 +6,11 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    sveltekit({
-      compilerOptions: {
-        runes: ({ filename }) =>
-          filename.split(/[/\\]/).includes('node_modules') ? undefined : true
-      },
-      adapter: adapter({
-        pages: 'build',
-        assets: 'build',
-        fallback: 'index.html',
-        precompress: false,
-        strict: false
-      })
-    }),
+    sveltekit(),
     SvelteKitPWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'service-worker.ts',
       registerType: 'autoUpdate',
       manifest: {
         name: 'Respondr',
@@ -48,9 +38,11 @@ export default defineConfig({
           }
         ]
       },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
-        navigateFallback: '/index.html'
+      injectManifest: {
+        globPatterns: [
+          'client/**/*.{js,css,ico,png,svg,webp,webmanifest}',
+          'prerendered/**/*.{html,json}'
+        ]
       }
     })
   ],

@@ -10,7 +10,7 @@ services:
         required: false
     environment:
       - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-      - BETTER_AUTH_URL=http://localhost:9595
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:9595}
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-change-me-use-openssl-rand-base64-32-for-production}
       - DATA_DIR=/app/data
     volumes:

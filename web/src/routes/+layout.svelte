@@ -7,14 +7,23 @@
   import InstallBanner from '$lib/components/InstallBanner.svelte';
   import MdTabbar from '$lib/components/md/MdTabbar.svelte';
   import { systemPrefersDark, watchSystemDark } from '$lib/dark-mode';
+  import { pwaInfo } from 'virtual:pwa-info';
   import '../app.css';
 
   const session = authClient.useSession();
 
   let { children } = $props();
   let dark = $state(systemPrefersDark());
+  const webManifest = $derived(pwaInfo ? pwaInfo.webManifest.linkTag : '');
 
-  onMount(() => watchSystemDark((value) => (dark = value)));
+  onMount(() => {
+    watchSystemDark((value) => (dark = value));
+
+    if (!pwaInfo) return;
+    void import('virtual:pwa-register').then(({ registerSW }) => {
+      registerSW({ immediate: true });
+    });
+  });
 
   const hideTabs = $derived(
     $page.url.pathname === '/login' || $page.url.pathname === '/setup'
@@ -26,6 +35,10 @@
     }
   });
 </script>
+
+<svelte:head>
+  {@html webManifest}
+</svelte:head>
 
 <KonstaProvider theme="material" materialTouchRipple {dark}>
   <div class="k-material k-md-vibrant md-app bg-md-light-surface-container-lowest dark:bg-md-dark-surface-container-lowest min-h-screen">

@@ -1,7 +1,7 @@
 import * as scanner from './scanner.js';
 import * as notifications from '../notifications/index.js';
 import * as historyDb from '../db/history.js';
-import { getStatus } from '../whatsapp/client.js';
+import { getAppDeps } from '../whatsapp/create.js';
 import * as logger from '../lib/logger.js';
 
 export async function runOnce() {
@@ -13,7 +13,7 @@ export async function runOnce() {
   logger.debug('runOnce started');
 
   try {
-    if (!getStatus().isReady) {
+    if (!getAppDeps().whatsapp.getStatus().isReady) {
       throw new Error('WhatsApp client is not ready');
     }
 

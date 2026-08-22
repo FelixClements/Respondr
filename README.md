@@ -106,8 +106,28 @@ The WhatsApp session is persisted in the `.wwebjs_auth` volume, and the SQLite d
 | `GOTIFY_URL` | Gotify server URL | (none) |
 | `GOTIFY_TOKEN` | Gotify app token | (none) |
 | `GOTIFY_PRIORITY` | Gotify message priority | `5` |
+| `VAPID_PUBLIC_KEY` | Web Push VAPID public key (see below) | (none) |
+| `VAPID_PRIVATE_KEY` | Web Push VAPID private key | (none) |
+| `VAPID_SUBJECT` | Contact URI for VAPID (`mailto:` or `https:`) | `mailto:respondr@example.com` |
 
-### NTFY.sh setup
+### Web Push (PWA) setup
+
+1. Generate VAPID keys:
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+2. Add the keys to `.env`:
+   ```bash
+   VAPID_PUBLIC_KEY=...
+   VAPID_PRIVATE_KEY=...
+   VAPID_SUBJECT=mailto:you@example.com
+   ```
+3. Install the Respondr PWA (Add to Home Screen on mobile).
+4. Open **Settings → Notifications** and tap **Enable push notifications**.
+5. Use **Test Web Push** to verify OS notifications arrive when the app is in the background.
+
+On iOS, Web Push requires iOS 16.4+ and the app must be opened from the home screen (standalone mode), not Safari.
+
 
 1. Install the NTFY app on your phone.
 2. Pick a unique topic name, e.g. `respondr-alerts-yourname`.

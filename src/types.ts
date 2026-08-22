@@ -85,13 +85,5 @@ export interface SettingsMap {
   chat_limit: string;
   threshold_hours: string;
   log_level: string;
-  ntfy_enabled?: string;
-  ntfy_server?: string;
-  ntfy_topic?: string;
-  ntfy_priority?: string;
-  gotify_enabled?: string;
-  gotify_url?: string;
-  gotify_token?: string;
-  gotify_priority?: string;
   [key: string]: string | undefined;
 }

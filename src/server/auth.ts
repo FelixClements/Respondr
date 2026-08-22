@@ -3,9 +3,13 @@ import { username } from 'better-auth/plugins';
 import { getDb } from '../db/index.js';
 import * as logger from '../lib/logger.js';
 
+const baseURL = process.env.BETTER_AUTH_URL || `http://localhost:${process.env.PORT || 9595}`;
+const localhostOrigin = `http://localhost:${process.env.PORT || 9595}`;
+
 export const auth = betterAuth({
   appName: 'Respondr',
-  baseURL: process.env.BETTER_AUTH_URL || `http://localhost:${process.env.PORT || 9595}`,
+  baseURL,
+  trustedOrigins: [...new Set([baseURL, localhostOrigin])],
   secret:
     process.env.BETTER_AUTH_SECRET || 'dev-secret-change-me-in-production-32chars',
   database: getDb(),
