@@ -7,11 +7,13 @@ services:
       - "9595:9595"
     env_file:
       - path: .env
-        required: false
+        required: true
     environment:
+      - NODE_ENV=production
       - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:9595}
-      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-change-me-use-openssl-rand-base64-32-for-production}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - SETUP_TOKEN=${SETUP_TOKEN:-}
       - DATA_DIR=/app/data
     volumes:
       - respondr_data:/app/data

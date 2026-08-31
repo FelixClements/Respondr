@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { serveStatic } from '@hono/node-server/serve-static';
+import { secureHeaders } from 'hono/secure-headers';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as logger from '../lib/logger.js';
@@ -8,13 +9,23 @@ import { auth, ensureBootstrapUser, createInitialUser } from './auth.js';
 import { buildApiApp } from './api.js';
 import { requireAuth } from './middleware.js';
 import type { AppVariables } from './middleware.js';
+import {
+  authStatusRateLimiter,
+  extractClientIp,
+  isHttpSetupAllowed,
+  requiresSetupToken,
+  setupRateLimiter,
+  verifySetupToken
+} from './security.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_BUILD = path.join(__dirname, '../../web/build');
+const MIN_PASSWORD_LENGTH = 8;
 
 export function createApp() {
   const app = new Hono<{ Variables: AppVariables }>();
 
+  app.use('*', secureHeaders());
   app.use('*', async (c, next) => {
     logger.info(`${c.req.method} ${c.req.path}`);
     await next();
@@ -25,15 +36,43 @@ export function createApp() {
 
   // One-time setup (public, only when no users exist)
   app.post('/api/setup', async (c) => {
+    const clientIp = extractClientIp(c);
+    const rateLimit = setupRateLimiter.check(clientIp);
+    if (!rateLimit.allowed) {
+      return c.json({ error: 'Too many setup attempts' }, 429, {
+        'Retry-After': String(rateLimit.retryAfterSeconds)
+      });
+    }
+
+    if (!isHttpSetupAllowed()) {
+      return c.json(
+        {
+          error:
+            'HTTP setup is disabled in production. Set DASHBOARD_USER and DASHBOARD_PASSWORD, or configure SETUP_TOKEN.'
+        },
+        503
+      );
+    }
+
     const { hasUsers } = await import('./auth.js');
     if (await hasUsers()) {
       return c.json({ error: 'Already configured' }, 403);
     }
+
     const body = await c.req.json().catch(() => ({}));
-    const username = String((body as { username?: string }).username || '').trim();
-    const password = String((body as { password?: string }).password || '');
-    if (!username || password.length < 6) {
-      return c.json({ error: 'Username and password (min 6 chars) required' }, 400);
+    const bodyRecord = body as { username?: string; password?: string; setupToken?: string };
+    const headerToken = c.req.header('x-setup-token');
+    if (!verifySetupToken(headerToken, bodyRecord.setupToken)) {
+      return c.json({ error: 'Invalid setup token' }, 401);
+    }
+
+    const username = String(bodyRecord.username || '').trim();
+    const password = String(bodyRecord.password || '');
+    if (!username || password.length < MIN_PASSWORD_LENGTH) {
+      return c.json(
+        { error: `Username and password (min ${MIN_PASSWORD_LENGTH} chars) required` },
+        400
+      );
     }
     try {
       await createInitialUser(username, password);
@@ -45,8 +84,19 @@ export function createApp() {
   });
 
   app.get('/api/auth-status', async (c) => {
+    const clientIp = extractClientIp(c);
+    const rateLimit = authStatusRateLimiter.check(clientIp);
+    if (!rateLimit.allowed) {
+      return c.json({ error: 'Too many requests' }, 429, {
+        'Retry-After': String(rateLimit.retryAfterSeconds)
+      });
+    }
+
     const { hasUsers } = await import('./auth.js');
-    return c.json({ hasUsers: await hasUsers() });
+    return c.json({
+      hasUsers: await hasUsers(),
+      requiresSetupToken: requiresSetupToken()
+    });
   });
 
   // Protected API routes

@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth';
 import { username } from 'better-auth/plugins';
 import { getDb } from '../db/index.js';
 import * as logger from '../lib/logger.js';
+import { getAuthSecret } from './security.js';
 
 const baseURL = process.env.BETTER_AUTH_URL || `http://localhost:${process.env.PORT || 9595}`;
 const localhostOrigin = `http://localhost:${process.env.PORT || 9595}`;
@@ -10,18 +11,31 @@ export const auth = betterAuth({
   appName: 'Respondr',
   baseURL,
   trustedOrigins: [...new Set([baseURL, localhostOrigin])],
-  secret:
-    process.env.BETTER_AUTH_SECRET || 'dev-secret-change-me-in-production-32chars',
+  secret: getAuthSecret(),
   database: getDb(),
   emailAndPassword: {
     enabled: true,
-    disableSignUp: false,
-    minPasswordLength: 6
+    disableSignUp: true,
+    minPasswordLength: 8
   },
-  disabledPaths: ['/sign-up/email'],
+  disabledPaths: ['/sign-up/email', '/is-username-available'],
   session: {
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async () => {
+          const row = getDb().prepare('SELECT COUNT(*) as count FROM user').get() as {
+            count: number;
+          };
+          if (row.count >= 1) {
+            throw new Error('Account creation is disabled');
+          }
+        }
+      }
+    }
   },
   plugins: [username({ displayUsername: false })]
 });

@@ -7,8 +7,10 @@ import { startClient } from './whatsapp/session.js';
 import * as scheduler from './scheduler.js';
 import * as logger from './lib/logger.js';
 import { initNotifications } from './notifications/index.js';
+import { validateProductionConfig } from './server/security.js';
 
 async function main() {
+  validateProductionConfig();
   initDb();
   settingsDb.seedDefaults();
   logger.setLevel(settingsDb.get('log_level') || 'info');

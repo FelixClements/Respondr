@@ -4,17 +4,19 @@ import { getDb, initDb } from './dist/db/index.js';
 
 initDb();
 
+const devSecret = process.env.BETTER_AUTH_SECRET || 'dev-secret-change-me-in-production-32chars';
+
 export const auth = betterAuth({
   appName: 'Respondr',
   baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:9595',
-  secret: process.env.BETTER_AUTH_SECRET || 'dev-secret-change-me-in-production-32chars',
+  secret: devSecret,
   database: getDb(),
   emailAndPassword: {
     enabled: true,
-    disableSignUp: false,
-    minPasswordLength: 6
+    disableSignUp: true,
+    minPasswordLength: 8
   },
-  disabledPaths: ['/sign-up/email'],
+  disabledPaths: ['/sign-up/email', '/is-username-available'],
   session: {
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24

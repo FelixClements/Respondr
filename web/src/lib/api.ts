@@ -28,17 +28,31 @@ export const api = {
     })
 };
 
-export async function getAuthStatus() {
-  const res = await fetch('/api/auth-status');
-  return res.json() as Promise<{ hasUsers: boolean }>;
+export interface AuthStatus {
+  hasUsers: boolean;
+  requiresSetupToken?: boolean;
 }
 
-export async function setupAccount(username: string, password: string) {
+export async function getAuthStatus(): Promise<AuthStatus> {
+  const res = await fetch('/api/auth-status');
+  return res.json() as Promise<AuthStatus>;
+}
+
+export async function setupAccount(username: string, password: string, setupToken?: string) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (setupToken) {
+    headers['X-Setup-Token'] = setupToken;
+  }
+
   const res = await fetch('/api/setup', {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password })
+    headers,
+    body: JSON.stringify({
+      username,
+      password,
+      ...(setupToken ? { setupToken } : {})
+    })
   });
   const body = await res.json();
   if (!res.ok) throw new Error((body as { error?: string }).error || 'Setup failed');

@@ -13,10 +13,14 @@ export const gotifyChannel: NotificationChannel = {
   async send(payload: NotificationPayload): Promise<ChannelOutcome> {
     const config = getNotificationSettings().gotify;
     try {
-      await axios.post(`${config.url}/message?token=${config.token}`, {
+      await axios.post(`${config.url}/message`, {
         title: payload.title,
         message: payload.body,
         priority: config.priority
+      }, {
+        headers: {
+          'X-Gotify-Key': config.token
+        }
       });
       return { channel: 'gotify', status: 'sent' };
     } catch (err) {

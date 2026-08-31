@@ -65,7 +65,7 @@ By securely mirroring your active conversation queue, the engine checks your cha
    ```bash
    cp .env.example .env
    ```
-   Edit `.env` and set at least the notification settings you want to use.
+   Edit `.env` and set auth secrets plus notification settings. For production Docker, see [Internet-facing deployment](#internet-facing-deployment) below.
 
 3. **Pull and run the pre-built image:**
    ```bash
@@ -87,14 +87,35 @@ The WhatsApp session is persisted in the `.wwebjs_auth` volume, and the SQLite d
 
 ---
 
+## Internet-facing deployment
+
+Do not expose port 9595 directly to the internet without TLS and secrets configured. See [`docs/self-hosted-security.md`](docs/self-hosted-security.md) for the full operator guide.
+
+Minimum production `.env` for Docker:
+
+```env
+NODE_ENV=production
+BETTER_AUTH_URL=https://respondr.example.com
+BETTER_AUTH_SECRET=<openssl rand -base64 32>
+DASHBOARD_USER=admin
+DASHBOARD_PASSWORD=<long random password>
+```
+
+Alternatively, set `SETUP_TOKEN` instead of `DASHBOARD_*` and complete `/setup` in the browser before opening the firewall.
+
+Put a reverse proxy (Caddy, nginx, Traefik) in front for TLS. The app refuses to start in production without `https://` in `BETTER_AUTH_URL`.
+
+---
+
 ## ⚙️ Environment Variables
 
 | Variable | Description | Default |
 |---|---|---|
-| `NODE_ENV` | Runtime environment | `development` |
+| `NODE_ENV` | Runtime environment (`production` enforces HTTPS URL + secret checks) | `development` |
 | `PORT` | Web server port | `9595` |
-| `BETTER_AUTH_URL` | Public URL of the app (for auth cookies) | `http://localhost:9595` |
-| `BETTER_AUTH_SECRET` | Auth signing secret (≥32 chars) | (required) |
+| `BETTER_AUTH_URL` | Public URL of the app (must be `https://` in production) | `http://localhost:9595` |
+| `BETTER_AUTH_SECRET` | Auth signing secret (≥32 chars, required in production) | dev fallback in development only |
+| `SETUP_TOKEN` | Token required for HTTP `/setup` in production (optional if using `DASHBOARD_*`) | (none) |
 | `SCAN_INTERVAL_MINUTES` | Minutes between automatic scans | `30` |
 | `CHAT_LIMIT` | Number of recent chats to check | `50` |
 | `THRESHOLD_HOURS` | Hours before a chat is considered forgotten | `3` |
@@ -175,7 +196,8 @@ The dashboard was rebuilt as a SvelteKit SPA with Better Auth. After upgrading:
 1. Run `npm run auth:migrate` to add auth tables to SQLite.
 2. Set `BETTER_AUTH_SECRET` in `.env`.
 3. Re-create your account via `/setup` or set `DASHBOARD_USER` / `DASHBOARD_PASSWORD` for auto-bootstrap.
-4. You will need to log in again (session cookies changed).
+4. Passwords must be at least 8 characters (was 6 in earlier versions).
+5. You will need to log in again (session cookies changed).
 
 ---
 

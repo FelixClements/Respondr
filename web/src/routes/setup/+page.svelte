@@ -6,15 +6,20 @@
   import { getAuthStatus, setupAccount } from '$lib/api';
   import { authClient } from '$lib/auth-client';
 
+  const MIN_PASSWORD_LENGTH = 8;
+
   let username = $state('');
   let password = $state('');
   let confirm = $state('');
+  let setupToken = $state('');
+  let requiresSetupToken = $state(false);
   let error = $state('');
   let loading = $state(false);
 
   onMount(async () => {
-    const { hasUsers } = await getAuthStatus();
-    if (hasUsers) goto('/login');
+    const status = await getAuthStatus();
+    if (status.hasUsers) goto('/login');
+    requiresSetupToken = status.requiresSetupToken === true;
   });
 
   async function createAccount() {
@@ -23,13 +28,17 @@
       error = 'Passwords do not match';
       return;
     }
-    if (password.length < 6) {
-      error = 'Password must be at least 6 characters';
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      error = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+      return;
+    }
+    if (requiresSetupToken && !setupToken.trim()) {
+      error = 'Setup token is required';
       return;
     }
     loading = true;
     try {
-      await setupAccount(username, password);
+      await setupAccount(username, password, setupToken.trim() || undefined);
       await authClient.signIn.username({ username, password });
       goto('/');
     } catch (err) {
@@ -50,6 +59,9 @@
   </Block>
 
   <List strong inset>
+  {#if requiresSetupToken}
+    <ListInput label="Setup token" type="password" bind:value={setupToken} />
+  {/if}
     <ListInput label="Username" type="text" bind:value={username} />
     <ListInput label="Password" type="password" bind:value={password} />
     <ListInput label="Confirm password" type="password" bind:value={confirm} />
