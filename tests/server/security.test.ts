@@ -78,3 +78,35 @@ describe('createRateLimiter', () => {
     expect(blocked.retryAfterSeconds).toBeGreaterThan(0);
   });
 });
+
+describe('getBindHostname and HTTP setup', () => {
+  it('defaults to loopback outside production', async () => {
+    process.env.NODE_ENV = 'development';
+    delete process.env.HOST;
+    const { getBindHostname, isLoopbackBind, isHttpSetupAllowed } = await import(
+      '../../src/server/security.js'
+    );
+    expect(getBindHostname()).toBe('127.0.0.1');
+    expect(isLoopbackBind()).toBe(true);
+    expect(isHttpSetupAllowed()).toBe(true);
+  });
+
+  it('blocks open HTTP setup when development binds all interfaces', async () => {
+    process.env.NODE_ENV = 'development';
+    process.env.HOST = '0.0.0.0';
+    delete process.env.SETUP_TOKEN;
+    vi.resetModules();
+    const { getBindHostname, isHttpSetupAllowed } = await import('../../src/server/security.js');
+    expect(getBindHostname()).toBe('0.0.0.0');
+    expect(isHttpSetupAllowed()).toBe(false);
+  });
+
+  it('allows HTTP setup on a non-loopback bind when SETUP_TOKEN is set', async () => {
+    process.env.NODE_ENV = 'development';
+    process.env.HOST = '0.0.0.0';
+    process.env.SETUP_TOKEN = 'setup-secret';
+    vi.resetModules();
+    const { isHttpSetupAllowed } = await import('../../src/server/security.js');
+    expect(isHttpSetupAllowed()).toBe(true);
+  });
+});

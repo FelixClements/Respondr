@@ -8,6 +8,10 @@ vi.mock('axios', () => ({
   }
 }));
 
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn().mockResolvedValue([{ address: '93.184.216.34', family: 4 }])
+}));
+
 vi.mock('../../src/notifications/settings.js', () => ({
   getNotificationSettings: () => ({
     gotify: {
@@ -43,12 +47,13 @@ describe('gotifyChannel', () => {
     const [url, body, config] = axiosPost.mock.calls[0] as [
       string,
       { title: string; message: string; priority: number },
-      { headers: Record<string, string> }
+      { headers: Record<string, string>; maxRedirects?: number }
     ];
 
     expect(url).toBe('https://gotify.example.com/message');
     expect(url).not.toContain('token=');
     expect(config.headers['X-Gotify-Key']).toBe('secret-token');
+    expect(config.maxRedirects).toBe(0);
     expect(body.title).toBe('Test');
     expect(body.message).toBe('Hello');
   });

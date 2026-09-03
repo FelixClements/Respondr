@@ -113,9 +113,10 @@ Put a reverse proxy (Caddy, nginx, Traefik) in front for TLS. The app refuses to
 |---|---|---|
 | `NODE_ENV` | Runtime environment (`production` enforces HTTPS URL + secret checks) | `development` |
 | `PORT` | Web server port | `9595` |
+| `HOST` | Listen address (`127.0.0.1` in development, `0.0.0.0` in production) | (see description) |
 | `BETTER_AUTH_URL` | Public URL of the app (must be `https://` in production) | `http://localhost:9595` |
 | `BETTER_AUTH_SECRET` | Auth signing secret (≥32 chars, required in production) | dev fallback in development only |
-| `SETUP_TOKEN` | Token required for HTTP `/setup` in production (optional if using `DASHBOARD_*`) | (none) |
+| `SETUP_TOKEN` | Token required for HTTP `/setup` when not bound to loopback (optional if using `DASHBOARD_*`) | (none) |
 | `SCAN_INTERVAL_MINUTES` | Minutes between automatic scans | `30` |
 | `CHAT_LIMIT` | Number of recent chats to check | `50` |
 | `THRESHOLD_HOURS` | Hours before a chat is considered forgotten | `3` |

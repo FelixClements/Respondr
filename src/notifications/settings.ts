@@ -1,4 +1,10 @@
 import * as settingsDb from '../db/settings.js';
+import { checkWebhookUrl } from '../lib/outboundUrl.js';
+
+function assertWebhookUrl(raw: string): void {
+  const check = checkWebhookUrl(raw);
+  if (!check.ok) throw new Error(check.error);
+}
 
 export interface NotificationSettingsDto {
   ntfy: {
@@ -62,7 +68,9 @@ export function updateNotificationSettings(input: {
     settingsDb.set('ntfy_enabled', input.ntfy_enabled ? '1' : '0');
   }
   if (input.ntfy_server !== undefined) {
-    settingsDb.set('ntfy_server', String(input.ntfy_server).trim());
+    const server = String(input.ntfy_server).trim();
+    assertWebhookUrl(server);
+    settingsDb.set('ntfy_server', server);
   }
   if (input.ntfy_topic !== undefined) {
     settingsDb.set('ntfy_topic', String(input.ntfy_topic).trim());
@@ -75,7 +83,9 @@ export function updateNotificationSettings(input: {
     settingsDb.set('gotify_enabled', input.gotify_enabled ? '1' : '0');
   }
   if (input.gotify_url !== undefined) {
-    settingsDb.set('gotify_url', String(input.gotify_url).trim());
+    const url = String(input.gotify_url).trim();
+    assertWebhookUrl(url);
+    settingsDb.set('gotify_url', url);
   }
   if (input.gotify_token !== undefined) {
     settingsDb.set('gotify_token', String(input.gotify_token).trim());

@@ -19,6 +19,7 @@ describe('setup routes', () => {
     createInitialUserMock.mockReset();
     process.env = { ...originalEnv };
     delete process.env.SETUP_TOKEN;
+    delete process.env.HOST;
     process.env.NODE_ENV = 'development';
   });
 
@@ -112,5 +113,35 @@ describe('setup routes', () => {
     const blocked = await app.request('/api/setup', { method: 'POST', headers, body });
     expect(blocked.status).toBe(429);
     expect(blocked.headers.get('Retry-After')).toBeTruthy();
+  });
+
+  it('blocks HTTP setup in development when HOST is 0.0.0.0 and no SETUP_TOKEN', async () => {
+    process.env.HOST = '0.0.0.0';
+    hasUsersMock.mockResolvedValue(false);
+
+    const app = await loadApp();
+    const res = await app.request('/api/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'admin', password: 'password12345' })
+    });
+
+    expect(res.status).toBe(503);
+    expect(createInitialUserMock).not.toHaveBeenCalled();
+  });
+
+  it('creates account in development on the default loopback bind', async () => {
+    hasUsersMock.mockResolvedValue(false);
+    createInitialUserMock.mockResolvedValue(undefined);
+
+    const app = await loadApp();
+    const res = await app.request('/api/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'admin', password: 'password12345' })
+    });
+
+    expect(res.status).toBe(200);
+    expect(createInitialUserMock).toHaveBeenCalledWith('admin', 'password12345');
   });
 });

@@ -7,6 +7,7 @@ import { runOnce } from '../engine/runner.js';
 import { sendTest } from '../notifications/index.js';
 import { getNotificationSettings, updateNotificationSettings } from '../notifications/settings.js';
 import { webPushChannel, getVapidPublicKey } from '../notifications/channels/webPushChannel.js';
+import { checkPushEndpoint } from '../lib/outboundUrl.js';
 import * as scheduler from '../scheduler.js';
 import * as logger from '../lib/logger.js';
 import type { AppDeps } from '../whatsapp/create.js';
@@ -210,6 +211,10 @@ export function createAppServices(deps: AppDeps) {
     subscribePush(sub: { endpoint?: string; keys?: { p256dh?: string; auth?: string } }) {
       if (!sub.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) {
         return { ok: false as const, error: 'Invalid subscription', status: 400 as const };
+      }
+      const endpointCheck = checkPushEndpoint(sub.endpoint);
+      if (!endpointCheck.ok) {
+        return { ok: false as const, error: endpointCheck.error, status: 400 as const };
       }
       pushSubscriptionsDb.addPushSubscription({
         endpoint: sub.endpoint,

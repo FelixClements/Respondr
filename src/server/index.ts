@@ -15,6 +15,7 @@ import {
   isHttpSetupAllowed,
   requiresSetupToken,
   setupRateLimiter,
+  signInRateLimiter,
   verifySetupToken
 } from './security.js';
 
@@ -32,7 +33,19 @@ export function createApp() {
   });
 
   // Better Auth — must be before catch-all routes
-  app.all('/api/auth/*', (c) => auth.handler(c.req.raw));
+  app.all('/api/auth/*', (c) => {
+    const path = c.req.path;
+    const isSignIn = path === '/api/auth/sign-in' || path.startsWith('/api/auth/sign-in/');
+    if (c.req.method === 'POST' && isSignIn) {
+      const rateLimit = signInRateLimiter.check(extractClientIp(c));
+      if (!rateLimit.allowed) {
+        return c.json({ error: 'Too many sign-in attempts' }, 429, {
+          'Retry-After': String(rateLimit.retryAfterSeconds)
+        });
+      }
+    }
+    return auth.handler(c.req.raw);
+  });
 
   // One-time setup (public, only when no users exist)
   app.post('/api/setup', async (c) => {
@@ -48,7 +61,7 @@ export function createApp() {
       return c.json(
         {
           error:
-            'HTTP setup is disabled in production. Set DASHBOARD_USER and DASHBOARD_PASSWORD, or configure SETUP_TOKEN.'
+            'HTTP setup is disabled on this bind address. Set DASHBOARD_USER and DASHBOARD_PASSWORD, or configure SETUP_TOKEN.'
         },
         503
       );

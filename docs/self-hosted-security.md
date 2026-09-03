@@ -14,16 +14,19 @@ Respondr is **single-tenant**: one instance, one admin account, one WhatsApp lin
 
 Assume attackers can reach your HTTP port. Assume they will probe `/api/auth-status` and `/api/setup` on fresh installs.
 
-## Built-in protections (August 2026)
+## Built-in protections (September 2026)
 
 | Control | Behavior |
 |---------|----------|
 | Production startup guard | `NODE_ENV=production` requires unique `BETTER_AUTH_SECRET` (32+ chars) and `BETTER_AUTH_URL` starting with `https://` |
-| First-boot setup | In production, HTTP `/api/setup` is blocked unless `SETUP_TOKEN` is set; token required via `X-Setup-Token` header or `setupToken` in JSON body |
+| Listen address | Development defaults to `127.0.0.1`. Production defaults to `0.0.0.0`. Override with `HOST`. |
+| First-boot setup | HTTP `/api/setup` is open without a token only on a loopback bind. Production and `HOST=0.0.0.0` require `SETUP_TOKEN` (via `X-Setup-Token` or `setupToken` in JSON), or use `DASHBOARD_*` env bootstrap instead. |
 | Env bootstrap | `DASHBOARD_USER` + `DASHBOARD_PASSWORD` still create the admin at container boot without HTTP setup |
 | Signup lockdown | `disableSignUp: true`, `/sign-up/email` and `/is-username-available` disabled, database hook rejects a second user |
 | Password policy | Minimum 8 characters |
-| Rate limits | `POST /api/setup`: 5 / 15 min / IP; `GET /api/auth-status`: 30 / min / IP |
+| Rate limits | `POST /api/setup`: 5 / 15 min / IP; `POST /api/auth/sign-in*`: 10 / 15 min / IP; `GET /api/auth-status`: 30 / min / IP |
+| Outbound webhooks | Gotify/NTFY URLs must be `http`/`https`. LAN and Docker DNS are allowed. Cloud metadata / link-local hosts are blocked. Requests do not follow redirects. |
+| Web Push endpoints | HTTPS only, hostname must be a known push provider (FCM, Mozilla, Apple, WNS) |
 | Security headers | `secureHeaders()` on all responses (nosniff, DENY framing, referrer policy, permissions policy) |
 | Gotify auth | Token sent in `X-Gotify-Key` header, not query string |
 | Docker defaults | `docker-compose.yml` sets `NODE_ENV=production` and requires `.env` (no placeholder secrets) |
@@ -33,7 +36,7 @@ Assume attackers can reach your HTTP port. Assume they will probe `/api/auth-sta
 | Area | Notes |
 |------|-------|
 | TLS termination | App enforces `https://` in `BETTER_AUTH_URL` for production; terminate TLS at Caddy, nginx, or Traefik |
-| Proxy rate limits | App rate-limits setup/status; still rate-limit `/api/auth/*` at the proxy for login brute force |
+| Proxy rate limits | App already rate-limits setup, sign-in, and auth-status. Extra proxy limits are optional defense in depth. |
 | Strong passwords | App minimum is 8 characters; use 12+ for admin accounts |
 | Container hardening | Image runs as root; Chromium uses `--no-sandbox` (typical in Docker, widens blast radius) |
 | Dependency CVEs | Keep images patched; `whatsapp-web.js`/puppeteer chain has upstream advisories |
@@ -53,7 +56,7 @@ DASHBOARD_PASSWORD=<long random password>
 SETUP_TOKEN=<openssl rand -base64 32>
 ```
 
-In production without either option, HTTP setup returns `503`.
+In production without either option, HTTP setup returns `503`. The same is true in development if you set `HOST=0.0.0.0` without `SETUP_TOKEN`.
 
 ## Production `.env` example
 
@@ -80,7 +83,6 @@ respondr.example.com {
 - [ ] Set `DASHBOARD_USER` and `DASHBOARD_PASSWORD` before first boot, **or** set `SETUP_TOKEN` and use `/setup` before exposing the port.
 - [ ] Set `BETTER_AUTH_URL` to your public `https://` URL.
 - [ ] Put TLS in front (reverse proxy). Do not expose plain HTTP.
-- [ ] Rate-limit `/api/auth/*` at the proxy.
 - [ ] Use a strong admin password (12+ characters).
 - [ ] Keep Docker images and host OS patched.
 - [ ] Back up the `respondr_data` and `respondr_wwebjs_auth` volumes.

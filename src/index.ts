@@ -7,7 +7,7 @@ import { startClient } from './whatsapp/session.js';
 import * as scheduler from './scheduler.js';
 import * as logger from './lib/logger.js';
 import { initNotifications } from './notifications/index.js';
-import { validateProductionConfig } from './server/security.js';
+import { getBindHostname, validateProductionConfig } from './server/security.js';
 
 async function main() {
   validateProductionConfig();
@@ -18,10 +18,11 @@ async function main() {
   initNotifications();
 
   const port = parseInt(process.env.PORT || '9595', 10);
+  const hostname = getBindHostname();
   const app = await prepareApp();
 
-  serve({ fetch: app.fetch, port }, (info) => {
-    logger.info(`Respondr server running on http://localhost:${info.port}`);
+  serve({ fetch: app.fetch, port, hostname }, (info) => {
+    logger.info(`Respondr server running on http://${hostname}:${info.port}`);
   });
 
   try {

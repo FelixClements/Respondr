@@ -33,7 +33,14 @@ export function buildApiApp() {
   });
 
   app.get('/notifications', (c) => c.json(services.getNotifications()));
-  app.put('/notifications', async (c) => c.json(services.updateNotifications(await c.req.json())));
+  app.put('/notifications', async (c) => {
+    try {
+      return c.json(services.updateNotifications(await c.req.json()));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return c.json({ error: message }, 400);
+    }
+  });
 
   app.get('/history', (c) => c.json(services.getHistory()));
   app.get('/qr', (c) => c.json(services.getQr()));

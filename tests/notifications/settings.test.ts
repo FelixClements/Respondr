@@ -45,6 +45,30 @@ describe('notification settings', () => {
     expect(updated.gotify.token).toBe('secret');
   });
 
+  it('rejects a metadata Gotify URL', () => {
+    expect(() =>
+      updateNotificationSettings({
+        gotify_url: 'http://169.254.169.254/'
+      })
+    ).toThrow(/not allowed/);
+  });
+
+  it('rejects a non-http NTFY server', () => {
+    expect(() =>
+      updateNotificationSettings({
+        ntfy_server: 'gopher://ntfy.example'
+      })
+    ).toThrow(/http/);
+  });
+
+  it('allows an empty Gotify URL', () => {
+    const updated = updateNotificationSettings({
+      gotify_enabled: false,
+      gotify_url: ''
+    });
+    expect(updated.gotify.url).toBe('');
+  });
+
   it('seeds from environment when unset', () => {
     closeDb();
     const freshPath = path.join(os.tmpdir(), `respondr-seed-${Date.now()}.db`);

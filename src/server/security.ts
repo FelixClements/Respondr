@@ -22,13 +22,24 @@ export function getSetupToken(): string | undefined {
   return token || undefined;
 }
 
+export function getBindHostname(): string {
+  const host = process.env.HOST?.trim();
+  if (host) return host;
+  return isProduction() ? '0.0.0.0' : '127.0.0.1';
+}
+
+export function isLoopbackBind(hostname = getBindHostname()): boolean {
+  return hostname === '127.0.0.1' || hostname === '::1' || hostname === 'localhost';
+}
+
 export function requiresSetupToken(): boolean {
   return isProduction() && Boolean(getSetupToken());
 }
 
 export function isHttpSetupAllowed(): boolean {
-  if (!isProduction()) return true;
-  return Boolean(getSetupToken());
+  if (getSetupToken()) return true;
+  if (isProduction()) return false;
+  return isLoopbackBind();
 }
 
 export function validateProductionConfig(): void {
@@ -105,6 +116,11 @@ export const setupRateLimiter = createRateLimiter({
 export const authStatusRateLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   max: 30
+});
+
+export const signInRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 10
 });
 
 export function verifySetupToken(
