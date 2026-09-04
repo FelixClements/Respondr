@@ -68,14 +68,21 @@ export function validateProductionConfig(): void {
   }
 }
 
+export function isTrustProxyEnabled(): boolean {
+  const val = process.env.TRUST_PROXY?.trim().toLowerCase();
+  return val === 'true' || val === '1';
+}
+
 export function extractClientIp(c: Context): string {
-  const forwarded = c.req.header('x-forwarded-for');
-  if (forwarded) {
-    const first = forwarded.split(',')[0]?.trim();
-    if (first) return first;
+  if (isTrustProxyEnabled()) {
+    const forwarded = c.req.header('x-forwarded-for');
+    if (forwarded) {
+      const first = forwarded.split(',')[0]?.trim();
+      if (first) return first;
+    }
+    const realIp = c.req.header('x-real-ip')?.trim();
+    if (realIp) return realIp;
   }
-  const realIp = c.req.header('x-real-ip')?.trim();
-  if (realIp) return realIp;
   return 'unknown';
 }
 
@@ -84,15 +91,36 @@ interface RateLimitBucket {
   resetAt: number;
 }
 
-export function createRateLimiter(options: { windowMs: number; max: number }) {
+export function createRateLimiter(options: { windowMs: number; max: number; maxBuckets?: number }) {
   const buckets = new Map<string, RateLimitBucket>();
+  const maxBuckets = options.maxBuckets ?? 5000;
+
+  function pruneExpired(now: number) {
+    for (const [k, bucket] of buckets.entries()) {
+      if (now >= bucket.resetAt) {
+        buckets.delete(k);
+      }
+    }
+  }
 
   return {
     check(key: string): { allowed: boolean; retryAfterSeconds: number } {
       const now = Date.now();
+      pruneExpired(now);
       const bucket = buckets.get(key);
 
       if (!bucket || now >= bucket.resetAt) {
+        // Refresh entry
+        if (bucket) {
+          buckets.delete(key);
+        } else if (buckets.size >= maxBuckets) {
+          pruneExpired(now);
+          while (buckets.size >= maxBuckets) {
+            const oldestKey = buckets.keys().next().value;
+            if (oldestKey === undefined) break;
+            buckets.delete(oldestKey);
+          }
+        }
         buckets.set(key, { count: 1, resetAt: now + options.windowMs });
         return { allowed: true, retryAfterSeconds: 0 };
       }
@@ -103,7 +131,16 @@ export function createRateLimiter(options: { windowMs: number; max: number }) {
       }
 
       bucket.count += 1;
+      // Refresh LRU order on update
+      buckets.delete(key);
+      buckets.set(key, bucket);
       return { allowed: true, retryAfterSeconds: 0 };
+    },
+    size(): number {
+      return buckets.size;
+    },
+    reset(): void {
+      buckets.clear();
     }
   };
 }

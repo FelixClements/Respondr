@@ -24,7 +24,7 @@ Assume attackers can reach your HTTP port. Assume they will probe `/api/auth-sta
 | Env bootstrap | `DASHBOARD_USER` + `DASHBOARD_PASSWORD` still create the admin at container boot without HTTP setup |
 | Signup lockdown | `disableSignUp: true`, `/sign-up/email` and `/is-username-available` disabled, database hook rejects a second user |
 | Password policy | Minimum 8 characters |
-| Rate limits | `POST /api/setup`: 5 / 15 min / IP; `POST /api/auth/sign-in*`: 10 / 15 min / IP; `GET /api/auth-status`: 30 / min / IP |
+| Rate limits | `POST /api/setup`: 5 / 15 min / IP; `POST /api/auth/sign-in*`: 10 / 15 min / IP; `GET /api/auth-status`: 30 / min / IP (requires `TRUST_PROXY=true` behind a reverse proxy to trust `X-Forwarded-For`) |
 | Outbound webhooks | Gotify/NTFY URLs must be `http`/`https`. LAN and Docker DNS are allowed. Cloud metadata / link-local hosts are blocked. Requests do not follow redirects. |
 | Web Push endpoints | HTTPS only, hostname must be a known push provider (FCM, Mozilla, Apple, WNS) |
 | Security headers | `secureHeaders()` on all responses (nosniff, DENY framing, referrer policy, permissions policy) |
@@ -36,7 +36,7 @@ Assume attackers can reach your HTTP port. Assume they will probe `/api/auth-sta
 | Area | Notes |
 |------|-------|
 | TLS termination | App enforces `https://` in `BETTER_AUTH_URL` for production; terminate TLS at Caddy, nginx, or Traefik |
-| Proxy rate limits | App already rate-limits setup, sign-in, and auth-status. Extra proxy limits are optional defense in depth. |
+| Proxy rate limits | App already rate-limits setup, sign-in, and auth-status. Set `TRUST_PROXY=true` in `.env` when deploying behind a reverse proxy so client IPs are extracted from `X-Forwarded-For`. Extra proxy limits are optional defense in depth. |
 | Strong passwords | App minimum is 8 characters; use 12+ for admin accounts |
 | Container hardening | Image runs as root; Chromium uses `--no-sandbox` (typical in Docker, widens blast radius) |
 | Dependency CVEs | Keep images patched; `whatsapp-web.js`/puppeteer chain has upstream advisories |

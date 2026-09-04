@@ -18,6 +18,7 @@ describe('setup routes', () => {
     hasUsersMock.mockReset();
     createInitialUserMock.mockReset();
     process.env = { ...originalEnv };
+    process.env.TRUST_PROXY = 'true';
     delete process.env.SETUP_TOKEN;
     delete process.env.HOST;
     process.env.NODE_ENV = 'development';

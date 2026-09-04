@@ -54,6 +54,7 @@ describe('gotifyChannel', () => {
     expect(url).not.toContain('token=');
     expect(config.headers['X-Gotify-Key']).toBe('secret-token');
     expect(config.maxRedirects).toBe(0);
+    expect(config.httpsAgent).toBeDefined();
     expect(body.title).toBe('Test');
     expect(body.message).toBe('Hello');
   });

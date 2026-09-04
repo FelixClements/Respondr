@@ -17,6 +17,7 @@ describe('sign-in rate limit', () => {
     authHandler.mockClear();
     process.env = { ...originalEnv };
     process.env.NODE_ENV = 'development';
+    process.env.TRUST_PROXY = 'true';
     delete process.env.SETUP_TOKEN;
     delete process.env.HOST;
   });

@@ -1,7 +1,22 @@
 import { lookup } from 'node:dns/promises';
+import http from 'node:http';
+import https from 'node:https';
 import { isIP } from 'node:net';
 
 export type UrlCheck = { ok: true; href: string } | { ok: false; error: string };
+
+export type PinnedAgentResult =
+  | {
+      ok: true;
+      href: string;
+      pinnedIp: string;
+      httpAgent?: http.Agent;
+      httpsAgent?: https.Agent;
+    }
+  | {
+      ok: false;
+      error: string;
+    };
 
 const PUSH_HOST_SUFFIXES = [
   'fcm.googleapis.com',
@@ -143,5 +158,74 @@ export async function resolveWebhookUrl(raw: string): Promise<UrlCheck> {
     return ok(parsed.href);
   } catch {
     return fail('URL host could not be resolved');
+  }
+}
+
+export async function createPinnedAgent(raw: string): Promise<PinnedAgentResult> {
+  const parsed = parseHttpUrl(raw);
+  if (!parsed.ok) return parsed;
+  if (!parsed.href || !parsed.url) {
+    return { ok: false, error: 'Target URL is required' };
+  }
+
+  const hostname = stripIpv6Brackets(parsed.url.hostname);
+  let resolvedIp: string;
+  let family: number;
+
+  if (isIP(hostname)) {
+    if (isBlockedAddress(hostname)) {
+      return { ok: false, error: 'URL host is not allowed' };
+    }
+    resolvedIp = hostname;
+    family = isIP(hostname);
+  } else {
+    try {
+      const records = await lookup(hostname, { all: true });
+      const addresses = Array.isArray(records) ? records : [records];
+      if (addresses.length === 0) {
+        return { ok: false, error: 'URL host could not be resolved' };
+      }
+      for (const record of addresses) {
+        if (isBlockedAddress(record.address)) {
+          return { ok: false, error: 'URL host is not allowed' };
+        }
+      }
+      resolvedIp = addresses[0].address;
+      family = addresses[0].family;
+    } catch {
+      return { ok: false, error: 'URL host could not be resolved' };
+    }
+  }
+
+  const customLookup = (
+    _host: string,
+    _opts: unknown,
+    cb: (err: NodeJS.ErrnoException | null, address: string, family: number) => void
+  ) => {
+    cb(null, resolvedIp, family);
+  };
+
+  const isHttps = parsed.url.protocol === 'https:';
+  if (isHttps) {
+    const httpsAgent = new https.Agent({
+      lookup: customLookup as any,
+      servername: hostname
+    });
+    return {
+      ok: true,
+      href: parsed.href,
+      pinnedIp: resolvedIp,
+      httpsAgent
+    };
+  } else {
+    const httpAgent = new http.Agent({
+      lookup: customLookup as any
+    });
+    return {
+      ok: true,
+      href: parsed.href,
+      pinnedIp: resolvedIp,
+      httpAgent
+    };
   }
 }

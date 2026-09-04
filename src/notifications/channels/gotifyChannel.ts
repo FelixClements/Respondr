@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { resolveWebhookUrl } from '../../lib/outboundUrl.js';
+import { createPinnedAgent } from '../../lib/outboundUrl.js';
 import { getNotificationSettings } from '../settings.js';
 import type { NotificationChannel, NotificationPayload, ChannelOutcome } from '../types.js';
 
@@ -14,11 +14,11 @@ export const gotifyChannel: NotificationChannel = {
   async send(payload: NotificationPayload): Promise<ChannelOutcome> {
     const config = getNotificationSettings().gotify;
     try {
-      const checked = await resolveWebhookUrl(config.url);
-      if (!checked.ok) {
-        return { channel: 'gotify', status: 'failed', error: checked.error };
+      const pinned = await createPinnedAgent(config.url);
+      if (!pinned.ok) {
+        return { channel: 'gotify', status: 'failed', error: pinned.error };
       }
-      const base = checked.href.replace(/\/+$/, '');
+      const base = pinned.href.replace(/\/+$/, '');
       await axios.post(
         `${base}/message`,
         {
@@ -30,6 +30,8 @@ export const gotifyChannel: NotificationChannel = {
           headers: {
             'X-Gotify-Key': config.token
           },
+          httpAgent: pinned.httpAgent,
+          httpsAgent: pinned.httpsAgent,
           maxRedirects: 0,
           timeout: 10_000
         }

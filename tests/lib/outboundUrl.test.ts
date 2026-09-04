@@ -69,3 +69,27 @@ describe('resolveWebhookUrl', () => {
     expect(result.ok).toBe(true);
   });
 });
+
+describe('createPinnedAgent', () => {
+  afterEach(() => {
+    lookupMock.mockReset();
+  });
+
+  it('rejects connection if resolved IP during connection is in blocked ranges', async () => {
+    lookupMock.mockResolvedValue([{ address: '169.254.169.254', family: 4 }]);
+    const { createPinnedAgent } = await import('../../src/lib/outboundUrl.js');
+    const agentResult = await createPinnedAgent('https://malicious.example.com/webhook');
+    expect(agentResult.ok).toBe(false);
+  });
+
+  it('provides pinned lookup for safe resolved IP', async () => {
+    lookupMock.mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
+    const { createPinnedAgent } = await import('../../src/lib/outboundUrl.js');
+    const agentResult = await createPinnedAgent('https://gotify.example.com/message');
+    expect(agentResult.ok).toBe(true);
+    if (agentResult.ok) {
+      expect(agentResult.pinnedIp).toBe('93.184.216.34');
+      expect(agentResult.httpsAgent).toBeDefined();
+    }
+  });
+});

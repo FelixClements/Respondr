@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { resolveWebhookUrl } from '../../lib/outboundUrl.js';
+import { createPinnedAgent } from '../../lib/outboundUrl.js';
 import { getNotificationSettings } from '../settings.js';
 import type { NotificationChannel, NotificationPayload, ChannelOutcome } from '../types.js';
 
@@ -14,16 +14,18 @@ export const ntfyChannel: NotificationChannel = {
   async send(payload: NotificationPayload): Promise<ChannelOutcome> {
     const config = getNotificationSettings().ntfy;
     try {
-      const checked = await resolveWebhookUrl(config.server);
-      if (!checked.ok) {
-        return { channel: 'ntfy', status: 'failed', error: checked.error };
+      const pinned = await createPinnedAgent(config.server);
+      if (!pinned.ok) {
+        return { channel: 'ntfy', status: 'failed', error: pinned.error };
       }
-      const base = checked.href.replace(/\/+$/, '');
+      const base = pinned.href.replace(/\/+$/, '');
       await axios.post(`${base}/${config.topic}`, payload.body, {
         headers: {
           Title: payload.title,
           Priority: String(config.priority)
         },
+        httpAgent: pinned.httpAgent,
+        httpsAgent: pinned.httpsAgent,
         maxRedirects: 0,
         timeout: 10_000
       });

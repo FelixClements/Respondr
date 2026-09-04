@@ -77,6 +77,57 @@ describe('createRateLimiter', () => {
     expect(blocked.allowed).toBe(false);
     expect(blocked.retryAfterSeconds).toBeGreaterThan(0);
   });
+
+  it('evicts oldest entries when maxBuckets capacity is reached', () => {
+    const limiter = createRateLimiter({ windowMs: 60_000, max: 2, maxBuckets: 3 });
+    limiter.check('ip-1');
+    limiter.check('ip-2');
+    limiter.check('ip-3');
+    expect(limiter.size()).toBe(3);
+
+    // Exceed capacity
+    limiter.check('ip-4');
+    expect(limiter.size()).toBe(3);
+    // 'ip-1' should have been evicted and treated as a new bucket
+    expect(limiter.check('ip-1').allowed).toBe(true);
+  });
+
+  it('cleans up expired entries upon check or periodically', async () => {
+    const limiter = createRateLimiter({ windowMs: 10, max: 2 });
+    limiter.check('ip-1');
+    expect(limiter.size()).toBe(1);
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    limiter.check('ip-2');
+    // ip-1 was expired and cleaned up
+    expect(limiter.size()).toBe(1);
+  });
+});
+
+describe('extractClientIp', () => {
+  it('ignores X-Forwarded-For when TRUST_PROXY is not enabled', async () => {
+    delete process.env.TRUST_PROXY;
+    const { extractClientIp } = await import('../../src/server/security.js');
+    const fakeContext = {
+      req: {
+        header: (name: string) =>
+          name.toLowerCase() === 'x-forwarded-for' ? '1.2.3.4' : undefined
+      }
+    } as any;
+    expect(extractClientIp(fakeContext)).toBe('unknown');
+  });
+
+  it('uses X-Forwarded-For when TRUST_PROXY is true', async () => {
+    process.env.TRUST_PROXY = 'true';
+    const { extractClientIp } = await import('../../src/server/security.js');
+    const fakeContext = {
+      req: {
+        header: (name: string) =>
+          name.toLowerCase() === 'x-forwarded-for' ? '1.2.3.4, 5.6.7.8' : undefined
+      }
+    } as any;
+    expect(extractClientIp(fakeContext)).toBe('1.2.3.4');
+  });
 });
 
 describe('getBindHostname and HTTP setup', () => {
