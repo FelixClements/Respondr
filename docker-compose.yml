@@ -4,6 +4,7 @@ services:
     image: respondr:local
     container_name: respondr
     ports:
+      # Same-host reverse proxy: use 127.0.0.1:9595:9595 (see README).
       - "9595:9595"
     env_file:
       - path: .env

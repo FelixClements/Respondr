@@ -149,5 +149,9 @@ vite.config.ts.timestamp-*
 .wwebjs_cache/
 data/
 
+# Local Compose overrides (loopback bind, extra env, etc.)
+docker-compose.override.yml
+docker-compose.override.yaml
+
 # Local dev tools
 .tools/
