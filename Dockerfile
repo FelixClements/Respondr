@@ -60,10 +60,13 @@ RUN npm ci --omit=dev \
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/web/build ./web/build
-COPY better-auth.docker.mjs ./better-auth.docker.mjs
 COPY scripts/docker-entrypoint.sh ./docker-entrypoint.sh
 
-RUN chmod +x ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh \
+    && mkdir -p /app/data /app/.wwebjs_auth \
+    && chown -R node:node /app
+
+USER node
 
 EXPOSE 9595
 

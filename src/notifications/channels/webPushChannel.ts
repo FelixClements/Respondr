@@ -46,25 +46,35 @@ export const webPushChannel: NotificationChannel = {
       return { channel: 'web-push', status: 'skipped' };
     }
 
-    let sent = 0;
-    let failed = 0;
     const body = JSON.stringify(payload);
 
-    for (const sub of subs) {
-      const pushSub = {
-        endpoint: sub.endpoint,
-        keys: { p256dh: sub.p256dh, auth: sub.auth }
-      };
-      try {
-        await webpush.sendNotification(pushSub, body);
-        sent += 1;
-      } catch (err) {
-        failed += 1;
-        const error = err as { message?: string; statusCode?: number };
-        logger.error(`Web Push failed for ${sub.endpoint}: ${error.message || err}`);
-        if (error.statusCode === 410 || error.statusCode === 404) {
-          pushSubscriptionsDb.removePushSubscription(sub.endpoint);
+    const results = await Promise.allSettled(
+      subs.map(async (sub) => {
+        const pushSub = {
+          endpoint: sub.endpoint,
+          keys: { p256dh: sub.p256dh, auth: sub.auth }
+        };
+        try {
+          await webpush.sendNotification(pushSub, body);
+          return { ok: true as const, endpoint: sub.endpoint };
+        } catch (err) {
+          const error = err as { message?: string; statusCode?: number };
+          logger.error(`Web Push failed for ${sub.endpoint}: ${error.message || err}`);
+          if (error.statusCode === 410 || error.statusCode === 404) {
+            pushSubscriptionsDb.removePushSubscription(sub.endpoint);
+          }
+          throw err;
         }
+      })
+    );
+
+    let sent = 0;
+    let failed = 0;
+    for (const res of results) {
+      if (res.status === 'fulfilled') {
+        sent += 1;
+      } else {
+        failed += 1;
       }
     }
 

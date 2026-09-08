@@ -4,8 +4,16 @@ import * as historyDb from '../db/history.js';
 import { getAppDeps } from '../whatsapp/create.js';
 import * as logger from '../lib/logger.js';
 
+let isScanning = false;
+
 export async function runOnce() {
   const runAt = Date.now();
+  if (isScanning) {
+    logger.warn('Scan already in progress, skipping concurrent run');
+    return { runAt, totalChecked: 0, remindersSent: 0, error: 'Scan already in progress' };
+  }
+
+  isScanning = true;
   let totalChecked = 0;
   let remindersSent = 0;
   let error: string | null = null;
@@ -33,6 +41,8 @@ export async function runOnce() {
     const message = err instanceof Error ? err.message : String(err);
     logger.error(`Scan run failed: ${message}`);
     error = message;
+  } finally {
+    isScanning = false;
   }
 
   historyDb.logScan(runAt, totalChecked, remindersSent, error);

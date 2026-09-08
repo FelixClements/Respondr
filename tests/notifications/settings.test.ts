@@ -69,6 +69,14 @@ describe('notification settings', () => {
     expect(updated.gotify.url).toBe('');
   });
 
+  it('rejects an invalid NTFY topic containing path traversal or illegal characters', () => {
+    expect(() =>
+      updateNotificationSettings({
+        ntfy_topic: '../invalid/topic'
+      })
+    ).toThrow(/letters, numbers/);
+  });
+
   it('seeds from environment when unset', () => {
     closeDb();
     const freshPath = path.join(os.tmpdir(), `respondr-seed-${Date.now()}.db`);

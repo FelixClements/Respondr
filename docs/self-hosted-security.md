@@ -36,9 +36,9 @@ Assume attackers can reach your HTTP port. Assume they will probe `/api/auth-sta
 | Area | Notes |
 |------|-------|
 | TLS termination | App enforces `https://` in `BETTER_AUTH_URL` for production; terminate TLS at Caddy, nginx, or Traefik |
-| Proxy rate limits | App already rate-limits setup, sign-in, and auth-status. Set `TRUST_PROXY=true` in `.env` when deploying behind a reverse proxy so client IPs are extracted from `X-Forwarded-For`. Extra proxy limits are optional defense in depth. |
+| Proxy rate limits | App already rate-limits setup, sign-in, and auth-status. Set `TRUST_PROXY=true` in `.env` when deploying behind a reverse proxy so client IPs are extracted from `X-Real-IP` or `X-Forwarded-For`. Ensure your reverse proxy overwrites `X-Forwarded-For` with the true client IP (`$remote_addr`) to prevent header spoofing. |
 | Strong passwords | App minimum is 8 characters; use 12+ for admin accounts |
-| Container hardening | Image runs as root; Chromium uses `--no-sandbox` (typical in Docker, widens blast radius) |
+| Container hardening | Container runs as unprivileged `node` user; Chromium uses `--no-sandbox` (typical in Docker) |
 | Dependency CVEs | Keep images patched; `whatsapp-web.js`/puppeteer chain has upstream advisories |
 
 ## First-boot setup options

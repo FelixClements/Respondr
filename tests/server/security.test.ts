@@ -105,16 +105,30 @@ describe('createRateLimiter', () => {
 });
 
 describe('extractClientIp', () => {
-  it('ignores X-Forwarded-For when TRUST_PROXY is not enabled', async () => {
+  it('ignores X-Forwarded-For and falls back to socket or loopback when TRUST_PROXY is not enabled', async () => {
     delete process.env.TRUST_PROXY;
     const { extractClientIp } = await import('../../src/server/security.js');
     const fakeContext = {
       req: {
         header: (name: string) =>
           name.toLowerCase() === 'x-forwarded-for' ? '1.2.3.4' : undefined
+      },
+      env: {
+        incoming: {
+          socket: {
+            remoteAddress: '192.168.1.50'
+          }
+        }
       }
     } as any;
-    expect(extractClientIp(fakeContext)).toBe('unknown');
+    expect(extractClientIp(fakeContext)).toBe('192.168.1.50');
+
+    const noSocketContext = {
+      req: {
+        header: () => undefined
+      }
+    } as any;
+    expect(extractClientIp(noSocketContext)).toBe('127.0.0.1');
   });
 
   it('uses X-Forwarded-For when TRUST_PROXY is true', async () => {
@@ -127,6 +141,21 @@ describe('extractClientIp', () => {
       }
     } as any;
     expect(extractClientIp(fakeContext)).toBe('1.2.3.4');
+  });
+
+  it('prefers X-Real-IP when TRUST_PROXY is true', async () => {
+    process.env.TRUST_PROXY = 'true';
+    const { extractClientIp } = await import('../../src/server/security.js');
+    const fakeContext = {
+      req: {
+        header: (name: string) => {
+          if (name.toLowerCase() === 'x-real-ip') return '9.9.9.9';
+          if (name.toLowerCase() === 'x-forwarded-for') return '1.2.3.4, 5.6.7.8';
+          return undefined;
+        }
+      }
+    } as any;
+    expect(extractClientIp(fakeContext)).toBe('9.9.9.9');
   });
 });
 

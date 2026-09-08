@@ -5,7 +5,7 @@ import { secureHeaders } from 'hono/secure-headers';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as logger from '../lib/logger.js';
-import { auth, ensureBootstrapUser, createInitialUser } from './auth.js';
+import { auth, ensureBootstrapUser, createInitialUser, runAuthMigrations } from './auth.js';
 import { buildApiApp } from './api.js';
 import { requireAuth } from './middleware.js';
 import type { AppVariables } from './middleware.js';
@@ -26,7 +26,28 @@ const MIN_PASSWORD_LENGTH = 8;
 export function createApp() {
   const app = new Hono<{ Variables: AppVariables }>();
 
-  app.use('*', secureHeaders());
+  app.use(
+    '*',
+    secureHeaders({
+      contentSecurityPolicy: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'blob:'],
+        fontSrc: ["'self'", 'data:'],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'none'"]
+      },
+      permissionsPolicy: {
+        camera: [],
+        microphone: [],
+        geolocation: []
+      }
+    })
+  );
   app.use('*', async (c, next) => {
     logger.info(`${c.req.method} ${c.req.path}`);
     await next();
@@ -35,6 +56,9 @@ export function createApp() {
   // Better Auth — must be before catch-all routes
   app.all('/api/auth/*', (c) => {
     const path = c.req.path;
+    if (path === '/api/auth/is-username-available' || path.startsWith('/api/auth/sign-up')) {
+      return c.json({ error: 'Endpoint disabled' }, 404);
+    }
     const isSignIn = path === '/api/auth/sign-in' || path.startsWith('/api/auth/sign-in/');
     if (c.req.method === 'POST' && isSignIn) {
       const rateLimit = signInRateLimiter.check(extractClientIp(c));
@@ -150,6 +174,7 @@ export function createApp() {
 }
 
 export async function prepareApp() {
+  await runAuthMigrations();
   await ensureBootstrapUser();
   return createApp();
 }

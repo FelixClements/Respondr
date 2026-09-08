@@ -6,6 +6,8 @@ interface PushSubscriptionInput {
   keys: { p256dh: string; auth: string };
 }
 
+const MAX_PUSH_SUBSCRIPTIONS = 25;
+
 export function addPushSubscription(subscription: PushSubscriptionInput): void {
   const db = getDb();
   const stmt = db.prepare(`
@@ -13,6 +15,15 @@ export function addPushSubscription(subscription: PushSubscriptionInput): void {
     VALUES (?, ?, ?, ?)
   `);
   stmt.run(subscription.endpoint, subscription.keys.p256dh, subscription.keys.auth, Date.now());
+
+  db.prepare(`
+    DELETE FROM push_subscriptions
+    WHERE id NOT IN (
+      SELECT id FROM push_subscriptions
+      ORDER BY created_at DESC
+      LIMIT ?
+    )
+  `).run(MAX_PUSH_SUBSCRIPTIONS);
 }
 
 export function removePushSubscription(endpoint: string): void {

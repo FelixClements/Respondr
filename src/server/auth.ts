@@ -1,8 +1,9 @@
 import { betterAuth } from 'better-auth';
+import { getMigrations } from 'better-auth/db/migration';
 import { username } from 'better-auth/plugins';
 import { getDb } from '../db/index.js';
 import * as logger from '../lib/logger.js';
-import { getAuthSecret } from './security.js';
+import { getAuthSecret, isProduction } from './security.js';
 
 const baseURL = process.env.BETTER_AUTH_URL || `http://localhost:${process.env.PORT || 9595}`;
 const localhostOrigin = `http://localhost:${process.env.PORT || 9595}`;
@@ -10,7 +11,7 @@ const localhostOrigin = `http://localhost:${process.env.PORT || 9595}`;
 export const auth = betterAuth({
   appName: 'Respondr',
   baseURL,
-  trustedOrigins: [...new Set([baseURL, localhostOrigin])],
+  trustedOrigins: isProduction() ? [baseURL] : [...new Set([baseURL, localhostOrigin])],
   secret: getAuthSecret(),
   database: getDb(),
   emailAndPassword: {
@@ -81,3 +82,16 @@ export async function hasUsers(): Promise<boolean> {
     return false;
   }
 }
+
+export async function runAuthMigrations(): Promise<void> {
+  try {
+    const { runMigrations } = await getMigrations(auth.options);
+    await runMigrations();
+    logger.debug('Better Auth migrations executed successfully');
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    logger.error(`Better Auth migration failed: ${message}`);
+    throw err;
+  }
+}
+

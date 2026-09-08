@@ -19,9 +19,10 @@ export const ntfyChannel: NotificationChannel = {
         return { channel: 'ntfy', status: 'failed', error: pinned.error };
       }
       const base = pinned.href.replace(/\/+$/, '');
-      await axios.post(`${base}/${config.topic}`, payload.body, {
+      const topic = encodeURIComponent(config.topic.trim());
+      await axios.post(`${base}/${topic}`, payload.body, {
         headers: {
-          Title: payload.title,
+          Title: payload.title.replace(/[\r\n]+/g, ' ').trim(),
           Priority: String(config.priority)
         },
         httpAgent: pinned.httpAgent,

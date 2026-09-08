@@ -73,7 +73,13 @@ export function updateNotificationSettings(input: {
     settingsDb.set('ntfy_server', server);
   }
   if (input.ntfy_topic !== undefined) {
-    settingsDb.set('ntfy_topic', String(input.ntfy_topic).trim());
+    const topic = String(input.ntfy_topic).trim();
+    if (topic && !/^[a-zA-Z0-9_\-.~]+$/.test(topic)) {
+      throw new Error(
+        'Ntfy topic must contain only letters, numbers, hyphens, underscores, and dots'
+      );
+    }
+    settingsDb.set('ntfy_topic', topic);
   }
   if (input.ntfy_priority !== undefined) {
     settingsDb.set('ntfy_priority', String(input.ntfy_priority));

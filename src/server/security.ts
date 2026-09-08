@@ -1,4 +1,6 @@
+import crypto from 'node:crypto';
 import type { Context } from 'hono';
+import { getConnInfo } from '@hono/node-server/conninfo';
 
 export const KNOWN_PLACEHOLDER_SECRETS = [
   'dev-secret-change-me-in-production-32chars',
@@ -75,15 +77,25 @@ export function isTrustProxyEnabled(): boolean {
 
 export function extractClientIp(c: Context): string {
   if (isTrustProxyEnabled()) {
+    const realIp = c.req.header('x-real-ip')?.trim();
+    if (realIp) return realIp;
+
     const forwarded = c.req.header('x-forwarded-for');
     if (forwarded) {
       const first = forwarded.split(',')[0]?.trim();
       if (first) return first;
     }
-    const realIp = c.req.header('x-real-ip')?.trim();
-    if (realIp) return realIp;
   }
-  return 'unknown';
+
+  try {
+    const conn = getConnInfo(c);
+    const remoteAddress = conn?.remote?.address?.trim();
+    if (remoteAddress) return remoteAddress;
+  } catch {
+    // When invoked without an underlying Node HTTP server (e.g. test environments)
+  }
+
+  return '127.0.0.1';
 }
 
 interface RateLimitBucket {
@@ -167,5 +179,14 @@ export function verifySetupToken(
   const expected = getSetupToken();
   if (!expected) return true;
   const provided = (headerToken || bodyToken || '').trim();
-  return provided.length > 0 && provided === expected;
+  if (!provided) return false;
+
+  const providedBuf = Buffer.from(provided, 'utf8');
+  const expectedBuf = Buffer.from(expected, 'utf8');
+
+  if (providedBuf.length !== expectedBuf.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(providedBuf, expectedBuf);
 }

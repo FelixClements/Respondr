@@ -6,6 +6,7 @@ const createInitialUserMock = vi.fn();
 vi.mock('../../src/server/auth.js', () => ({
   auth: { handler: vi.fn() },
   ensureBootstrapUser: vi.fn(),
+  runAuthMigrations: vi.fn(),
   createInitialUser: (...args: unknown[]) => createInitialUserMock(...args),
   hasUsers: () => hasUsersMock()
 }));
@@ -144,5 +145,35 @@ describe('setup routes', () => {
 
     expect(res.status).toBe(200);
     expect(createInitialUserMock).toHaveBeenCalledWith('admin', 'password12345');
+  });
+
+  it('blocks username enumeration and direct sign-up routes with 404', async () => {
+    const app = await loadApp();
+    const resAvailable = await app.request('/api/auth/is-username-available', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'admin' })
+    });
+    expect(resAvailable.status).toBe(404);
+
+    const resSignUp = await app.request('/api/auth/sign-up/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'admin@example.com', password: 'password123' })
+    });
+    expect(resSignUp.status).toBe(404);
+  });
+
+  it('includes Content-Security-Policy and Permissions-Policy headers', async () => {
+    const app = await loadApp();
+    const res = await app.request('/api/auth-status');
+    const csp = res.headers.get('content-security-policy');
+    const permissions = res.headers.get('permissions-policy');
+
+    expect(csp).toBeDefined();
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(permissions).toBeDefined();
+    expect(permissions).toContain('camera=()');
   });
 });

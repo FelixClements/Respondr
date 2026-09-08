@@ -12,7 +12,7 @@
     "build:web": "npm run build --prefix web",
     "test": "vitest run",
     "test:watch": "vitest",
-    "auth:migrate": "npx auth@latest migrate --config ./better-auth.config.ts --yes",
+    "auth:migrate": "tsx src/db/migrate.ts",
     "check": "tsc -p tsconfig.json --noEmit"
   },
   "keywords": [

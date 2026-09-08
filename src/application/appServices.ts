@@ -12,6 +12,17 @@ import * as scheduler from '../scheduler.js';
 import * as logger from '../lib/logger.js';
 import type { AppDeps } from '../whatsapp/create.js';
 
+import type { SettingsMap } from '../types.js';
+
+function filterCoreSettings(all: SettingsMap): SettingsMap {
+  return {
+    interval_minutes: all.interval_minutes,
+    chat_limit: all.chat_limit,
+    threshold_hours: all.threshold_hours,
+    log_level: all.log_level
+  };
+}
+
 function workflowMap() {
   const stateById: Record<string, reminderDiscovery.ChatWorkflowState | undefined> = {};
   for (const row of chatStateDb.list()) {
@@ -26,6 +37,7 @@ function workflowMap() {
 
 export function createAppServices(deps: AppDeps) {
   const { chatSource, whatsapp } = deps;
+  let isReconnecting = false;
 
   return {
     getStatusPayload() {
@@ -47,7 +59,7 @@ export function createAppServices(deps: AppDeps) {
         isReady: status.isReady,
         health,
         nextScan: scheduler.getNextRunAt(),
-        settings: settingsDb.getAll()
+        settings: filterCoreSettings(settingsDb.getAll())
       };
     },
 
@@ -132,7 +144,7 @@ export function createAppServices(deps: AppDeps) {
     },
 
     getCoreSettings() {
-      return settingsDb.getAll();
+      return filterCoreSettings(settingsDb.getAll());
     },
 
     updateCoreSettings(body: Record<string, unknown>) {
@@ -158,7 +170,7 @@ export function createAppServices(deps: AppDeps) {
       } catch (err) {
         logger.error(`Failed to reschedule: ${err}`);
       }
-      return { data: settingsDb.getAll(), status: 200 as const };
+      return { data: filterCoreSettings(settingsDb.getAll()), status: 200 as const };
     },
 
     getNotifications() {
@@ -197,6 +209,14 @@ export function createAppServices(deps: AppDeps) {
     runScan: runOnce,
 
     async reconnect() {
+      if (isReconnecting) {
+        return {
+          ok: false as const,
+          error: 'Reconnection already in progress',
+          status: whatsapp.getStatus()
+        };
+      }
+      isReconnecting = true;
       logger.info('Reconnect requested from dashboard');
       try {
         await whatsapp.restartClient();
@@ -205,6 +225,8 @@ export function createAppServices(deps: AppDeps) {
         const message = err instanceof Error ? err.message : String(err);
         logger.error(`Reconnect failed: ${message}`);
         return { ok: false as const, error: message, status: whatsapp.getStatus() };
+      } finally {
+        isReconnecting = false;
       }
     },
 
