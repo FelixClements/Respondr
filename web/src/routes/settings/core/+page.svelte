@@ -20,7 +20,7 @@
       settings = await api.put('/settings', {
         interval_minutes: parseInt(settings.interval_minutes, 10),
         chat_limit: parseInt(settings.chat_limit, 10),
-        threshold_hours: parseInt(settings.threshold_hours, 10)
+        threshold_hours: parseFloat(settings.threshold_hours)
       });
       message = 'Saved';
     } catch (err) {
@@ -36,12 +36,27 @@
 
   <List strong inset>
     <ListInput
-      label="Scan interval (minutes)"
+      label="Scan interval (minutes, 1-59)"
       type="number"
+      min="1"
+      max="59"
       bind:value={settings.interval_minutes}
     />
-    <ListInput label="Chat limit" type="number" bind:value={settings.chat_limit} />
-    <ListInput label="Threshold (hours)" type="number" bind:value={settings.threshold_hours} />
+    <ListInput
+      label="Chat limit (1-200)"
+      type="number"
+      min="1"
+      max="200"
+      bind:value={settings.chat_limit}
+    />
+    <ListInput
+      label="Threshold (hours, 1-168)"
+      type="number"
+      min="1"
+      max="168"
+      step="0.5"
+      bind:value={settings.threshold_hours}
+    />
   </List>
 
   <Block class="px-4">

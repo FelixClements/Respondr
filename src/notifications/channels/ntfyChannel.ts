@@ -33,7 +33,12 @@ export const ntfyChannel: NotificationChannel = {
       return { channel: 'ntfy', status: 'sent' };
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
-      return { channel: 'ntfy', status: 'failed', error };
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      return {
+        channel: 'ntfy',
+        status: 'failed',
+        error: status ? `HTTP ${status}: ${error}` : error
+      };
     }
   }
 };

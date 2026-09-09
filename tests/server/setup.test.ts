@@ -173,6 +173,13 @@ describe('setup routes', () => {
     expect(csp).toBeDefined();
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain('script-src');
+    expect(csp).toContain("'self'");
+    expect(csp).toContain('style-src');
+    expect(csp).toContain('https://fonts.googleapis.com');
+    expect(csp).toContain('font-src');
+    expect(csp).toContain('https://fonts.gstatic.com');
+    expect(csp).toContain('object-src');
     expect(permissions).toBeDefined();
     expect(permissions).toContain('camera=()');
   });

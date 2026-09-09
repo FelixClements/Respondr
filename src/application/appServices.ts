@@ -7,20 +7,23 @@ import { runOnce } from '../engine/runner.js';
 import { sendTest } from '../notifications/index.js';
 import { getNotificationSettings, updateNotificationSettings } from '../notifications/settings.js';
 import { webPushChannel, getVapidPublicKey } from '../notifications/channels/webPushChannel.js';
-import { checkPushEndpoint } from '../lib/outboundUrl.js';
+import { checkPushEndpoint, checkPushKeys } from '../lib/outboundUrl.js';
 import * as scheduler from '../scheduler.js';
 import * as logger from '../lib/logger.js';
+import { createGuard } from '../lib/guard.js';
 import type { AppDeps } from '../whatsapp/create.js';
 
+import { CORE_SETTING_KEYS } from '../db/settings.js';
 import type { SettingsMap } from '../types.js';
 
-function filterCoreSettings(all: SettingsMap): SettingsMap {
-  return {
-    interval_minutes: all.interval_minutes,
-    chat_limit: all.chat_limit,
-    threshold_hours: all.threshold_hours,
-    log_level: all.log_level
-  };
+export const RECONNECT_BUSY_ERROR = 'Reconnection already in progress';
+
+export function filterCoreSettings(all: SettingsMap): SettingsMap {
+  const result = {} as SettingsMap;
+  for (const key of CORE_SETTING_KEYS) {
+    result[key] = all[key];
+  }
+  return result;
 }
 
 function workflowMap() {
@@ -37,7 +40,7 @@ function workflowMap() {
 
 export function createAppServices(deps: AppDeps) {
   const { chatSource, whatsapp } = deps;
-  let isReconnecting = false;
+  const reconnectGuard = createGuard();
 
   return {
     getStatusPayload() {
@@ -68,8 +71,8 @@ export function createAppServices(deps: AppDeps) {
       const recentReminders = historyDb.getRecentReminders(5);
       const recentScans = historyDb.getRecentScans(1);
       const settings = settingsDb.getAll();
-      const thresholdHours = parseFloat(settings.threshold_hours || '3') || 3;
-      const limit = parseInt(settings.chat_limit || '50', 10) || 50;
+      const thresholdHours = settingsDb.parseThresholdHours(settings.threshold_hours);
+      const limit = settingsDb.parseChatLimit(settings.chat_limit);
 
       const stateCounts = { ignored: 0, done: 0 };
       for (const row of chatStateDb.list()) {
@@ -105,8 +108,8 @@ export function createAppServices(deps: AppDeps) {
 
     async getChats() {
       const settings = settingsDb.getAll();
-      const thresholdHours = parseFloat(settings.threshold_hours || '3') || 3;
-      const limit = parseInt(settings.chat_limit || '50', 10) || 50;
+      const thresholdHours = settingsDb.parseThresholdHours(settings.threshold_hours);
+      const limit = settingsDb.parseChatLimit(settings.chat_limit);
       const status = whatsapp.getStatus();
 
       try {
@@ -148,18 +151,21 @@ export function createAppServices(deps: AppDeps) {
     },
 
     updateCoreSettings(body: Record<string, unknown>) {
+      if (!body || typeof body !== 'object' || Array.isArray(body)) {
+        return { error: 'Invalid settings body', status: 400 as const };
+      }
       const interval = parseInt(String(body.interval_minutes), 10);
       const limit = parseInt(String(body.chat_limit), 10);
-      const threshold = parseInt(String(body.threshold_hours), 10);
+      const threshold = parseFloat(String(body.threshold_hours));
 
-      if (!Number.isFinite(interval) || interval < 1) {
-        return { error: 'Scan interval must be at least 1 minute', status: 400 as const };
+      if (!Number.isFinite(interval) || interval < 1 || interval > 59) {
+        return { error: 'Scan interval must be between 1 and 59 minutes', status: 400 as const };
       }
-      if (!Number.isFinite(limit) || limit < 1) {
-        return { error: 'Chat limit must be at least 1', status: 400 as const };
+      if (!Number.isFinite(limit) || limit < 1 || limit > 200) {
+        return { error: 'Chat limit must be between 1 and 200', status: 400 as const };
       }
-      if (!Number.isFinite(threshold) || threshold < 1) {
-        return { error: 'Threshold must be at least 1 hour', status: 400 as const };
+      if (!Number.isFinite(threshold) || threshold < 1 || threshold > 168) {
+        return { error: 'Threshold must be between 1 and 168 hours', status: 400 as const };
       }
 
       settingsDb.set('interval_minutes', interval);
@@ -168,7 +174,9 @@ export function createAppServices(deps: AppDeps) {
       try {
         scheduler.reschedule();
       } catch (err) {
-        logger.error(`Failed to reschedule: ${err}`);
+        const message = err instanceof Error ? err.message : String(err);
+        logger.error(`Failed to reschedule: ${message}`);
+        return { error: `Settings saved but scheduler failed: ${message}`, status: 500 as const };
       }
       return { data: filterCoreSettings(settingsDb.getAll()), status: 200 as const };
     },
@@ -178,16 +186,20 @@ export function createAppServices(deps: AppDeps) {
     },
 
     updateNotifications(body: Record<string, unknown>) {
-      return updateNotificationSettings({
-        ntfy_enabled: body.ntfy_enabled === true || body.ntfy_enabled === '1',
-        ntfy_server: body.ntfy_server as string | undefined,
-        ntfy_topic: body.ntfy_topic as string | undefined,
-        ntfy_priority: parseInt(String(body.ntfy_priority), 10),
-        gotify_enabled: body.gotify_enabled === true || body.gotify_enabled === '1',
-        gotify_url: body.gotify_url as string | undefined,
-        gotify_token: body.gotify_token as string | undefined,
-        gotify_priority: parseInt(String(body.gotify_priority), 10)
-      });
+      const input: Record<string, unknown> = {};
+      if (body.ntfy_enabled !== undefined)
+        input.ntfy_enabled = body.ntfy_enabled === true || body.ntfy_enabled === '1';
+      if (body.ntfy_server !== undefined) input.ntfy_server = body.ntfy_server as string | undefined;
+      if (body.ntfy_topic !== undefined) input.ntfy_topic = body.ntfy_topic as string | undefined;
+      if (body.ntfy_priority !== undefined) input.ntfy_priority = body.ntfy_priority as number;
+      if (body.gotify_enabled !== undefined)
+        input.gotify_enabled = body.gotify_enabled === true || body.gotify_enabled === '1';
+      if (body.gotify_url !== undefined) input.gotify_url = body.gotify_url as string | undefined;
+      if (body.gotify_token !== undefined)
+        input.gotify_token = body.gotify_token as string | undefined;
+      if (body.gotify_priority !== undefined)
+        input.gotify_priority = body.gotify_priority as number;
+      return updateNotificationSettings(input);
     },
 
     getHistory() {
@@ -203,20 +215,20 @@ export function createAppServices(deps: AppDeps) {
 
     async sendTestNotification(title: string, message: string) {
       const results = await sendTest(title, message);
-      return { ok: true as const, results };
+      return { ok: results.anySent, results };
     },
 
     runScan: runOnce,
 
     async reconnect() {
-      if (isReconnecting) {
+      if (!reconnectGuard.tryAcquire()) {
         return {
           ok: false as const,
-          error: 'Reconnection already in progress',
+          busy: true as const,
+          error: RECONNECT_BUSY_ERROR,
           status: whatsapp.getStatus()
         };
       }
-      isReconnecting = true;
       logger.info('Reconnect requested from dashboard');
       try {
         await whatsapp.restartClient();
@@ -226,7 +238,7 @@ export function createAppServices(deps: AppDeps) {
         logger.error(`Reconnect failed: ${message}`);
         return { ok: false as const, error: message, status: whatsapp.getStatus() };
       } finally {
-        isReconnecting = false;
+        reconnectGuard.release();
       }
     },
 
@@ -237,6 +249,12 @@ export function createAppServices(deps: AppDeps) {
       const endpointCheck = checkPushEndpoint(sub.endpoint);
       if (!endpointCheck.ok) {
         return { ok: false as const, error: endpointCheck.error, status: 400 as const };
+      }
+      // Validate key material up front so malformed subscriptions fail at
+      // subscribe time, not silently at send time.
+      const keyCheck = checkPushKeys(sub.keys.p256dh, sub.keys.auth);
+      if (!keyCheck.ok) {
+        return { ok: false as const, error: keyCheck.error, status: 400 as const };
       }
       pushSubscriptionsDb.addPushSubscription({
         endpoint: sub.endpoint,
@@ -259,6 +277,10 @@ export function createAppServices(deps: AppDeps) {
       return { publicKey, configured: true };
     },
 
+    isPushSubscribed(endpoint: string) {
+      return pushSubscriptionsDb.hasPushSubscription(endpoint);
+    },
+
     async testPush() {
       const result = await webPushChannel.send({
         title: 'Respondr test',
@@ -266,7 +288,8 @@ export function createAppServices(deps: AppDeps) {
         url: '/',
         icon: '/icon-192.png'
       });
-      return { ok: true as const, result };
+      const ok = result.status === 'sent';
+      return { ok, result };
     },
 
     getLogs(level: string | undefined, limit: number) {
@@ -278,9 +301,13 @@ export function createAppServices(deps: AppDeps) {
     },
 
     updateLogLevel(level: string) {
-      settingsDb.set('log_level', level);
-      logger.setLevel(level);
-      logger.info(`Log level changed to ${level}`);
+      const normalized = String(level || '').toLowerCase();
+      if (!logger.isLogLevel(normalized)) {
+        throw new Error('Invalid log level (expected debug, info, warn, or error)');
+      }
+      settingsDb.set('log_level', normalized);
+      logger.setLevel(normalized);
+      logger.info(`Log level changed to ${normalized}`);
       return { level: logger.getLevel() };
     }
   };

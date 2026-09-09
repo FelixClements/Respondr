@@ -11,13 +11,12 @@ import { requireAuth } from './middleware.js';
 import type { AppVariables } from './middleware.js';
 import {
   authStatusRateLimiter,
-  extractClientIp,
-  isHttpSetupAllowed,
-  requiresSetupToken,
   setupRateLimiter,
-  signInRateLimiter,
-  verifySetupToken
-} from './security.js';
+  signInRateLimiter
+} from './rateLimit.js';
+import { extractClientIp } from './clientIp.js';
+import { verifySetupToken } from './setupToken.js';
+import { isHttpSetupAllowed, requiresSetupToken } from './secrets.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_BUILD = path.join(__dirname, '../../web/build');
@@ -31,10 +30,13 @@ export function createApp() {
     secureHeaders({
       contentSecurityPolicy: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
+        // Pragmatic allowlist: SvelteKit adapter-static emits inline bootstrap
+        // scripts, so 'unsafe-inline' is required until nonce plumbing lands.
+        // Theme toggle is externalized to /theme-init.js to stay under 'self'.
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         imgSrc: ["'self'", 'data:', 'blob:'],
-        fontSrc: ["'self'", 'data:'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
         connectSrc: ["'self'"],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
@@ -92,8 +94,14 @@ export function createApp() {
     }
 
     const { hasUsers } = await import('./auth.js');
-    if (await hasUsers()) {
-      return c.json({ error: 'Already configured' }, 403);
+    try {
+      if (await hasUsers()) {
+        return c.json({ error: 'Already configured' }, 403);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.error(`Setup status check failed: ${message}`);
+      return c.json({ error: 'Setup status check failed' }, 500);
     }
 
     const body = await c.req.json().catch(() => ({}));
@@ -116,7 +124,8 @@ export function createApp() {
       return c.json({ ok: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      return c.json({ error: message }, 400);
+      logger.error(`Setup failed for user ${username}: ${message}`);
+      return c.json({ error: 'Setup failed' }, 400);
     }
   });
 
@@ -130,10 +139,16 @@ export function createApp() {
     }
 
     const { hasUsers } = await import('./auth.js');
-    return c.json({
-      hasUsers: await hasUsers(),
-      requiresSetupToken: requiresSetupToken()
-    });
+    try {
+      return c.json({
+        hasUsers: await hasUsers(),
+        requiresSetupToken: requiresSetupToken()
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.error(`Auth status check failed: ${message}`);
+      return c.json({ error: 'Status check failed' }, 500);
+    }
   });
 
   // Protected API routes
@@ -174,7 +189,16 @@ export function createApp() {
 }
 
 export async function prepareApp() {
-  await runAuthMigrations();
+  try {
+    await runAuthMigrations();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const uid = typeof process.getuid === 'function' ? process.getuid() : 'unknown';
+    logger.error(
+      `Better Auth migrations failed as uid ${uid} (DB_PATH=${process.env.DB_PATH || 'unset'}, DATA_DIR=${process.env.DATA_DIR || './data'}): ${message}`
+    );
+    throw err;
+  }
   await ensureBootstrapUser();
   return createApp();
 }

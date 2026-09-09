@@ -1,19 +1,43 @@
 import * as scanner from './scanner.js';
 import * as notifications from '../notifications/index.js';
 import * as historyDb from '../db/history.js';
+import { releaseScanLock, resetScanLockForTests, tryAcquireScanLock } from '../db/scanLock.js';
 import { getAppDeps } from '../whatsapp/create.js';
+import { createGuard } from '../lib/guard.js';
 import * as logger from '../lib/logger.js';
 
-let isScanning = false;
+const scanGuard = createGuard();
+export const SCAN_BUSY_ERROR = 'Scan already in progress';
+
+export function resetScanForTests(): void {
+  scanGuard.resetForTests();
+  resetScanLockForTests();
+}
 
 export async function runOnce() {
   const runAt = Date.now();
-  if (isScanning) {
+  if (!scanGuard.tryAcquire()) {
     logger.warn('Scan already in progress, skipping concurrent run');
-    return { runAt, totalChecked: 0, remindersSent: 0, error: 'Scan already in progress' };
+    return { runAt, totalChecked: 0, remindersSent: 0, error: SCAN_BUSY_ERROR, busy: true as const };
   }
 
-  isScanning = true;
+  let dbLockHeld = false;
+  try {
+    if (!tryAcquireScanLock(runAt)) {
+      return {
+        runAt,
+        totalChecked: 0,
+        remindersSent: 0,
+        error: SCAN_BUSY_ERROR,
+        busy: true as const
+      };
+    }
+    dbLockHeld = true;
+  } catch {
+    // tryAcquireScanLock already logs and fails open; continue
+    dbLockHeld = false;
+  }
+
   let totalChecked = 0;
   let remindersSent = 0;
   let error: string | null = null;
@@ -42,7 +66,8 @@ export async function runOnce() {
     logger.error(`Scan run failed: ${message}`);
     error = message;
   } finally {
-    isScanning = false;
+    scanGuard.release();
+    if (dbLockHeld) releaseScanLock();
   }
 
   historyDb.logScan(runAt, totalChecked, remindersSent, error);

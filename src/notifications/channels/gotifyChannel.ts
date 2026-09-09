@@ -39,7 +39,12 @@ export const gotifyChannel: NotificationChannel = {
       return { channel: 'gotify', status: 'sent' };
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
-      return { channel: 'gotify', status: 'failed', error };
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      return {
+        channel: 'gotify',
+        status: 'failed',
+        error: status ? `HTTP ${status}: ${error}` : error
+      };
     }
   }
 };

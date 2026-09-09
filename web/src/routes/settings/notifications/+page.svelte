@@ -72,13 +72,28 @@
   }
 
   async function testPush() {
-    await api.post('/push/test');
-    message = 'Test push sent';
+    message = '';
+    try {
+      const res = await api.post<{ ok: boolean; result?: { status?: string; error?: string } }>(
+        '/push/test'
+      );
+      message = res.ok ? 'Test push sent' : `Test push failed: ${res.result?.error || res.result?.status || 'no delivery'}`;
+    } catch (err) {
+      message = err instanceof Error ? err.message : 'Test push failed';
+    }
   }
 
   async function testNotification() {
-    await api.post('/test-notification', { title: 'Test', message: 'Notification test' });
-    message = 'Test notification sent';
+    message = '';
+    try {
+      const res = await api.post<{ ok: boolean }>('/test-notification', {
+        title: 'Test',
+        message: 'Notification test'
+      });
+      message = res.ok ? 'Test notification sent' : 'Test notification had no deliveries';
+    } catch (err) {
+      message = err instanceof Error ? err.message : 'Test notification failed';
+    }
   }
 </script>
 

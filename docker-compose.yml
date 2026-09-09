@@ -20,6 +20,16 @@ services:
       - respondr_data:/app/data
       - respondr_wwebjs_auth:/app/.wwebjs_auth
     restart: unless-stopped
+    # Single replica only: scan locks, scheduler, and rate limiters are DB/in-process
+    # (see docs). Do not scale past 1 replica without a distributed lock.
+    # Bind-mount alternative to named volumes:
+    #   volumes:
+    #     - ./data:/app/data
+    #     - ./.wwebjs_auth:/app/.wwebjs_auth
+    # If you bind-mount, ensure the host dirs are owned by uid 1000 (node):
+    #   mkdir -p data .wwebjs_auth && sudo chown -R 1000:1000 data .wwebjs_auth
+    # Or set `user: "1000:1000"` below. The entrypoint also chowns $DATA_DIR/$AUTH_DIR
+    # at boot when starting as root, then drops to the node user.
 
 volumes:
   respondr_data:

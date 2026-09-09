@@ -39,7 +39,7 @@ function shouldLog(level: LogLevel): boolean {
 function pushLog(level: LogLevel, message: string): void {
   logs.push({ ts: Date.now(), level, message: String(message) });
   if (logs.length > MAX_LOGS) {
-    logs.shift();
+    logs.splice(0, logs.length - MAX_LOGS);
   }
 }
 
@@ -71,16 +71,24 @@ export function error(...args: unknown[]): void {
   log('error', ...args);
 }
 
+export const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
+export type LogLevelName = (typeof LOG_LEVELS)[number];
+
+export function isLogLevel(value: unknown): value is LogLevelName {
+  return typeof value === 'string' && (LOG_LEVELS as readonly string[]).includes(value.toLowerCase());
+}
+
 export function getLogs({ level, limit = 200 }: { level?: string; limit?: number } = {}): LogEntry[] {
-  let result = [...logs];
-  if (level) {
-    const min = parseLevel(level);
-    result = result.filter((entry) => LEVELS[entry.level] >= min);
+  const take = Math.min(Math.max(Number.isFinite(limit as number) ? (limit as number) : 200, 1), 1000);
+  const min = level ? parseLevel(level) : null;
+  const result: LogEntry[] = [];
+  for (let i = logs.length - 1; i >= 0 && result.length < take; i--) {
+    const entry = logs[i];
+    if (min === null || LEVELS[entry.level] >= min) {
+      result.push(entry);
+    }
   }
-  if (limit && limit > 0) {
-    result = result.slice(-limit);
-  }
-  return result;
+  return result.reverse();
 }
 
 function capture(level: LogLevel) {

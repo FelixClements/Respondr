@@ -1,4 +1,5 @@
 import { lookup } from 'node:dns/promises';
+import type { LookupFunction } from 'node:net';
 import http from 'node:http';
 import https from 'node:https';
 import { isIP } from 'node:net';
@@ -136,6 +137,23 @@ export function checkPushEndpoint(raw: string): UrlCheck {
   return ok(url.href);
 }
 
+function isBase64Url(value: string): boolean {
+  return /^[A-Za-z0-9\-_]+={0,2}$/.test(value);
+}
+
+export function checkPushKeys(
+  p256dh: string,
+  auth: string
+): { ok: true } | { ok: false; error: string } {
+  if (!isBase64Url(p256dh) || p256dh.length < 80 || p256dh.length > 90) {
+    return { ok: false, error: 'Invalid push p256dh key' };
+  }
+  if (!isBase64Url(auth) || auth.length < 20 || auth.length > 28) {
+    return { ok: false, error: 'Invalid push auth key' };
+  }
+  return { ok: true };
+}
+
 export async function resolveWebhookUrl(raw: string): Promise<UrlCheck> {
   const parsed = parseHttpUrl(raw);
   if (!parsed.ok) return parsed;
@@ -197,7 +215,12 @@ export async function createPinnedAgent(raw: string): Promise<PinnedAgentResult>
     }
   }
 
-  const customLookup = (
+  // checkWebhookUrl is parse + hostname-block only (no DNS). Actual sends go
+  // through createPinnedAgent/resolveWebhookUrl which resolve all A/AAAA and
+  // reject blocked addresses, then pin the IP via a custom lookup. Save-time
+  // checks are fail-fast UX; send-time resolution is the SSRF enforcement
+  // point (TOCTOU split is intentional: DNS is re-resolved at send).
+  const customLookup: LookupFunction = (
     _host: string,
     _opts: unknown,
     cb: (err: NodeJS.ErrnoException | null, address: string, family: number) => void
@@ -208,7 +231,7 @@ export async function createPinnedAgent(raw: string): Promise<PinnedAgentResult>
   const isHttps = parsed.url.protocol === 'https:';
   if (isHttps) {
     const httpsAgent = new https.Agent({
-      lookup: customLookup as any,
+      lookup: customLookup,
       servername: hostname
     });
     return {
@@ -219,7 +242,7 @@ export async function createPinnedAgent(raw: string): Promise<PinnedAgentResult>
     };
   } else {
     const httpAgent = new http.Agent({
-      lookup: customLookup as any
+      lookup: customLookup
     });
     return {
       ok: true,

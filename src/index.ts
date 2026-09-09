@@ -3,11 +3,28 @@ import { serve } from '@hono/node-server';
 import { prepareApp } from './server/index.js';
 import { initDb } from './db/index.js';
 import * as settingsDb from './db/settings.js';
-import { startClient } from './whatsapp/session.js';
+import { startClient, stopClient } from './whatsapp/session.js';
 import * as scheduler from './scheduler.js';
 import * as logger from './lib/logger.js';
 import { initNotifications } from './notifications/index.js';
-import { getBindHostname, validateProductionConfig } from './server/security.js';
+import { getBindHostname, validateProductionConfig } from './server/secrets.js';
+
+let shuttingDown = false;
+async function shutdownWhatsAppOnSignal(signal: string): Promise<void> {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info(`${signal} received; shutting down WhatsApp client.`);
+  try {
+    await stopClient();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    logger.error(`Error stopping WhatsApp client on ${signal}: ${message}`);
+  }
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => void shutdownWhatsAppOnSignal('SIGTERM'));
+process.on('SIGINT', () => void shutdownWhatsAppOnSignal('SIGINT'));
 
 async function main() {
   validateProductionConfig();

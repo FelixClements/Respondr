@@ -27,7 +27,8 @@ export function buildApiApp() {
 
   app.get('/settings', (c) => c.json(services.getCoreSettings()));
   app.put('/settings', async (c) => {
-    const result = services.updateCoreSettings(await c.req.json());
+    const body = await c.req.json().catch(() => null);
+    const result = services.updateCoreSettings(body as Record<string, unknown>);
     if ('error' in result) return c.json({ error: result.error }, result.status);
     return c.json(result.data);
   });
@@ -55,14 +56,30 @@ export function buildApiApp() {
   app.post('/run', async (c) => {
     const now = Date.now();
     if (now - lastManualRun < MANUAL_RUN_COOLDOWN_MS) {
-      return c.text('Please wait before triggering another run', 429);
+      const retryAfterSeconds = Math.max(
+        1,
+        Math.ceil((MANUAL_RUN_COOLDOWN_MS - (now - lastManualRun)) / 1000)
+      );
+      return c.json({ error: 'Please wait before triggering another run' }, 429, {
+        'Retry-After': String(retryAfterSeconds)
+      });
     }
     lastManualRun = now;
-    return c.json(await services.runScan());
+    const result = await services.runScan();
+    if ('busy' in result && result.busy) {
+      return c.json(result, 409);
+    }
+    if (result.error) {
+      return c.json(result, 200);
+    }
+    return c.json(result);
   });
 
   app.post('/reconnect', async (c) => {
     const result = await services.reconnect();
+    if (!result.ok && 'busy' in result && result.busy) {
+      return c.json(result, 409);
+    }
     return c.json(result, result.ok ? 200 : 500);
   });
 
@@ -77,15 +94,27 @@ export function buildApiApp() {
   });
   app.get('/push/config', (c) => c.json(services.getPushConfig()));
   app.post('/push/test', async (c) => c.json(await services.testPush()));
+  app.post('/push/status', async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    const endpoint = (body as { endpoint?: string }).endpoint;
+    if (!endpoint) return c.json({ subscribed: false });
+    return c.json({ subscribed: services.isPushSubscribed(endpoint) });
+  });
 
   app.get('/logs', (c) => {
-    const limit = parseInt(c.req.query('limit') || '500', 10);
-    return c.json(services.getLogs(c.req.query('level'), Number.isFinite(limit) ? limit : 500));
+    const raw = parseInt(c.req.query('limit') || '500', 10);
+    const limit = Number.isFinite(raw) ? Math.min(Math.max(raw, 1), 1000) : 500;
+    return c.json(services.getLogs(c.req.query('level'), limit));
   });
   app.put('/logs', async (c) => {
-    const body = await c.req.json();
-    const level = String(body.log_level || 'info').toLowerCase();
-    return c.json(services.updateLogLevel(level));
+    try {
+      const body = await c.req.json();
+      const level = String(body.log_level || 'info').toLowerCase();
+      return c.json(services.updateLogLevel(level));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return c.json({ error: message }, 400);
+    }
   });
 
   return app;

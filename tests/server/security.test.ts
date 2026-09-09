@@ -131,7 +131,7 @@ describe('extractClientIp', () => {
     expect(extractClientIp(noSocketContext)).toBe('127.0.0.1');
   });
 
-  it('uses X-Forwarded-For when TRUST_PROXY is true', async () => {
+  it('uses rightmost valid X-Forwarded-For when TRUST_PROXY is true', async () => {
     process.env.TRUST_PROXY = 'true';
     const { extractClientIp } = await import('../../src/server/security.js');
     const fakeContext = {
@@ -140,22 +140,43 @@ describe('extractClientIp', () => {
           name.toLowerCase() === 'x-forwarded-for' ? '1.2.3.4, 5.6.7.8' : undefined
       }
     } as any;
-    expect(extractClientIp(fakeContext)).toBe('1.2.3.4');
+    expect(extractClientIp(fakeContext)).toBe('5.6.7.8');
   });
 
-  it('prefers X-Real-IP when TRUST_PROXY is true', async () => {
+  it('ignores spoofed leftmost entries and garbage, falls back to X-Real-IP only when valid', async () => {
     process.env.TRUST_PROXY = 'true';
     const { extractClientIp } = await import('../../src/server/security.js');
-    const fakeContext = {
+    const withBoth = {
       req: {
         header: (name: string) => {
           if (name.toLowerCase() === 'x-real-ip') return '9.9.9.9';
-          if (name.toLowerCase() === 'x-forwarded-for') return '1.2.3.4, 5.6.7.8';
+          if (name.toLowerCase() === 'x-forwarded-for') return 'spoofed, 1.2.3.4, 5.6.7.8';
           return undefined;
         }
       }
     } as any;
-    expect(extractClientIp(fakeContext)).toBe('9.9.9.9');
+    expect(extractClientIp(withBoth)).toBe('5.6.7.8');
+
+    const realIpOnly = {
+      req: {
+        header: (name: string) => {
+          if (name.toLowerCase() === 'x-real-ip') return '9.9.9.9';
+          return undefined;
+        }
+      }
+    } as any;
+    expect(extractClientIp(realIpOnly)).toBe('9.9.9.9');
+
+    const garbageOnly = {
+      req: {
+        header: (name: string) => {
+          if (name.toLowerCase() === 'x-real-ip') return 'not-an-ip';
+          if (name.toLowerCase() === 'x-forwarded-for') return 'also-bogus';
+          return undefined;
+        }
+      }
+    } as any;
+    expect(extractClientIp(garbageOnly)).toBe('127.0.0.1');
   });
 });
 

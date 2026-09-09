@@ -1,5 +1,4 @@
 import type { RawChat, ForgottenChat } from '../types.js';
-import * as chatStateDb from '../db/chatState.js';
 
 export function hoursSince(timestampMs: number | null | undefined, now = Date.now()): number | null {
   if (!timestampMs || !now) return null;
@@ -53,14 +52,43 @@ export function buildDiscoveryContext(
   return { ignoredIds, doneById };
 }
 
-/** Clears done state when a newer message arrived; returns true if chat should be scanned. */
-export function reconcileStaleDone(
-  chatId: string,
+/**
+ * Pure stale-done check. Returns true when the done row should be cleared
+ * (expired `until` or a newer message arrived). Callers persist the reset;
+ * this module never touches the DB so reads stay side-effect free.
+ */
+export function shouldResetDoneState(
+  doneState: ChatWorkflowState | undefined,
   lastMessageAt: number,
-  doneState: ChatWorkflowState | undefined
+  now = Date.now()
+): boolean {
+  if (!doneState) return false;
+  if (doneState.until && now > doneState.until) return true;
+  if (lastMessageAt && lastMessageAt > doneState.createdAt) return true;
+  return false;
+}
+
+/**
+ * Pure scan decision for a done chat: true = eligible to scan (no done state
+ * or stale done that the caller should reset first).
+ */
+export function shouldScanDoneChat(
+  doneState: ChatWorkflowState | undefined,
+  lastMessageAt: number,
+  now = Date.now()
 ): boolean {
   if (!doneState) return true;
-  return chatStateDb.resetDoneIfNewMessage(chatId, lastMessageAt);
+  return shouldResetDoneState(doneState, lastMessageAt, now);
+}
+
+/** @deprecated use shouldScanDoneChat + shouldResetDoneState (pure, no DB). */
+export function reconcileStaleDone(
+  _chatId: string,
+  lastMessageAt: number,
+  doneState: ChatWorkflowState | undefined,
+  now = Date.now()
+): boolean {
+  return shouldScanDoneChat(doneState, lastMessageAt, now);
 }
 
 export function discoverReminders(
@@ -68,8 +96,9 @@ export function discoverReminders(
   thresholdHours: number,
   context: DiscoveryContext,
   now = Date.now()
-): { totalChecked: number; forgotten: ForgottenChat[] } {
+): { totalChecked: number; forgotten: ForgottenChat[]; resetDoneIds: string[] } {
   const forgotten: ForgottenChat[] = [];
+  const resetDoneIds: string[] = [];
 
   for (const chat of chats) {
     if (context.ignoredIds.has(chat.id)) continue;
@@ -77,7 +106,9 @@ export function discoverReminders(
     const doneState = context.doneById.get(chat.id);
     if (doneState) {
       const lastMessageAt = chat.lastMessage?.timestampMs || 0;
-      if (!reconcileStaleDone(chat.id, lastMessageAt, doneState)) {
+      if (shouldResetDoneState(doneState, lastMessageAt, now)) {
+        resetDoneIds.push(chat.id);
+      } else {
         continue;
       }
     }
@@ -94,7 +125,7 @@ export function discoverReminders(
     });
   }
 
-  return { totalChecked: chats.length, forgotten };
+  return { totalChecked: chats.length, forgotten, resetDoneIds };
 }
 
 export function enrichChat(
@@ -110,7 +141,7 @@ export function enrichChat(
   if (state?.state === 'ignored') {
     suppressed = true;
   } else if (state?.state === 'done') {
-    suppressed = !reconcileStaleDone(chat.id, lastTs, state);
+    suppressed = !shouldScanDoneChat(state, lastTs, now);
   }
 
   return {

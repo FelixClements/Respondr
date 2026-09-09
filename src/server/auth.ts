@@ -1,9 +1,9 @@
 import { betterAuth } from 'better-auth';
-import { getMigrations } from 'better-auth/db/migration';
 import { username } from 'better-auth/plugins';
-import { getDb } from '../db/index.js';
+import { getDb, hasUsers as dbHasUsers } from '../db/index.js';
+import { runAuthMigrationsForOptions } from '../db/authMigrations.js';
 import * as logger from '../lib/logger.js';
-import { getAuthSecret, isProduction } from './security.js';
+import { getAuthSecret, isProduction } from './secrets.js';
 
 const baseURL = process.env.BETTER_AUTH_URL || `http://localhost:${process.env.PORT || 9595}`;
 const localhostOrigin = `http://localhost:${process.env.PORT || 9595}`;
@@ -71,27 +71,17 @@ export async function ensureBootstrapUser(): Promise<void> {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     logger.error(`Failed to bootstrap user: ${message}`);
+    throw new Error(`Failed to bootstrap DASHBOARD_USER admin: ${message}`);
   }
 }
 
 export async function hasUsers(): Promise<boolean> {
-  try {
-    const row = getDb().prepare('SELECT COUNT(*) as count FROM user').get() as { count: number };
-    return row.count > 0;
-  } catch {
-    return false;
-  }
+  // Single source of truth lives in src/db/index.ts; keep this async wrapper
+  // for existing callers (routes, tests) so fail-closed semantics stay in sync.
+  return dbHasUsers();
 }
 
 export async function runAuthMigrations(): Promise<void> {
-  try {
-    const { runMigrations } = await getMigrations(auth.options);
-    await runMigrations();
-    logger.debug('Better Auth migrations executed successfully');
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    logger.error(`Better Auth migration failed: ${message}`);
-    throw err;
-  }
+  return runAuthMigrationsForOptions(auth.options);
 }
 

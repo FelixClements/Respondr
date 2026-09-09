@@ -20,13 +20,31 @@ export function isPushEnvironmentSupported(): boolean {
   return true;
 }
 
+async function isEndpointSubscribedOnServer(endpoint: string): Promise<boolean> {
+  try {
+    const res = await fetch('/api/push/status', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint })
+    });
+    if (!res.ok) return true;
+    const data = (await res.json()) as { subscribed?: boolean };
+    return data.subscribed !== false;
+  } catch {
+    return true;
+  }
+}
+
 export async function getPushStatus(): Promise<PushStatus> {
   if (!isPushEnvironmentSupported()) return 'unsupported';
   if (Notification.permission === 'denied') return 'denied';
 
   const registration = await navigator.serviceWorker.ready;
   const existing = await registration.pushManager.getSubscription();
-  return existing ? 'subscribed' : 'not-subscribed';
+  if (!existing) return 'not-subscribed';
+  const onServer = await isEndpointSubscribedOnServer(existing.endpoint);
+  return onServer ? 'subscribed' : 'not-subscribed';
 }
 
 async function fetchVapidPublicKey(): Promise<string> {
@@ -68,12 +86,17 @@ export async function subscribeToPush(): Promise<void> {
   });
 
   const json = subscription.toJSON();
-  await fetch('/api/push/subscribe', {
+  const res = await fetch('/api/push/subscribe', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(json)
   });
+  if (!res.ok) {
+    await subscription.unsubscribe().catch(() => undefined);
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error((body as { error?: string }).error || 'Push subscribe failed');
+  }
 }
 
 export async function unsubscribeFromPush(): Promise<void> {

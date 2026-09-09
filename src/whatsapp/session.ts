@@ -13,17 +13,40 @@ const DEFAULT_CHROMIUM_PATH = '/Applications/Chromium.app/Contents/MacOS/Chromiu
 const PUPPETEER_EXECUTABLE_PATH =
   process.env.PUPPETEER_EXECUTABLE_PATH ||
   (fs.existsSync(DEFAULT_CHROMIUM_PATH) ? DEFAULT_CHROMIUM_PATH : undefined);
-const PUPPETEER_ARGS = process.env.PUPPETEER_ARGS
-  ? process.env.PUPPETEER_ARGS.split(' ')
-  : [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--window-size=1280,720'
-    ];
+/** Split PUPPETEER_ARGS respecting single/double quotes (naive split breaks paths with spaces). */
+export function parsePuppeteerArgs(raw: string | undefined): string[] {
+  const fallback = [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-gpu',
+    '--no-first-run',
+    '--no-default-browser-check',
+    '--window-size=1280,720'
+  ];
+  if (!raw) return fallback;
+  const args: string[] = [];
+  let current = '';
+  let quote: string | null = null;
+  for (const ch of raw) {
+    if (quote) {
+      if (ch === quote) quote = null;
+      else current += ch;
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+    } else if (/\s/.test(ch)) {
+      if (current) {
+        args.push(current);
+        current = '';
+      }
+    } else {
+      current += ch;
+    }
+  }
+  if (current) args.push(current);
+  return args.length > 0 ? args : fallback;
+}
+const PUPPETEER_ARGS = parsePuppeteerArgs(process.env.PUPPETEER_ARGS);
 
 let qrDataUrl: string | null = null;
 let status = 'initializing';
@@ -202,14 +225,5 @@ export async function getRecentChats(limit = 50): Promise<RawChat[]> {
   return chats;
 }
 
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received; shutting down WhatsApp client.');
-  await stopClient();
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  logger.info('SIGINT received; shutting down WhatsApp client.');
-  await stopClient();
-  process.exit(0);
-});
+// NOTE: process signal handlers live in src/index.ts (shutdownWhatsAppOnSignal)
+// so importing this module (e.g. in tests) never installs process.exit hooks.

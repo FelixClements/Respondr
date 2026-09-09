@@ -5,17 +5,21 @@ import type { ChatSource } from '../ports/chatSource.js';
 import { getAppDeps } from '../whatsapp/create.js';
 
 export async function scan(chatSource: ChatSource, now = Date.now()) {
-  const chatLimit = parseInt(settingsDb.get('chat_limit') || '50', 10) || 50;
-  const thresholdHours = parseFloat(settingsDb.get('threshold_hours') || '3') || 3;
+  const chatLimit = settingsDb.parseChatLimit(undefined);
+  const thresholdHours = settingsDb.parseThresholdHours(undefined);
 
   const chats = await chatSource.getRecentChats(chatLimit);
   const context = reminderDiscovery.buildDiscoveryContext(chatStateDb.list());
-  const { totalChecked, forgotten } = reminderDiscovery.discoverReminders(
+  const { totalChecked, forgotten, resetDoneIds } = reminderDiscovery.discoverReminders(
     chats,
     thresholdHours,
     context,
     now
   );
+
+  for (const id of resetDoneIds) {
+    chatStateDb.remove(id);
+  }
 
   return { totalChecked, forgotten };
 }

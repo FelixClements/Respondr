@@ -28,6 +28,26 @@ export function getVapidPublicKey(): string | null {
   return process.env.VAPID_PUBLIC_KEY || null;
 }
 
+function pruneIfGone(endpoint: string, statusCode: number | undefined): void {
+  if (statusCode !== 410 && statusCode !== 404) return;
+  try {
+    pushSubscriptionsDb.removePushSubscription(endpoint);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    logger.error(`Failed to prune gone push subscription ${endpoint}: ${message}`);
+  }
+}
+
+function partitionSettled(results: PromiseSettledResult<unknown>[]): { sent: number; failed: number } {
+  let sent = 0;
+  let failed = 0;
+  for (const res of results) {
+    if (res.status === 'fulfilled') sent += 1;
+    else failed += 1;
+  }
+  return { sent, failed };
+}
+
 export const webPushChannel: NotificationChannel = {
   id: 'web-push',
 
@@ -60,27 +80,13 @@ export const webPushChannel: NotificationChannel = {
         } catch (err) {
           const error = err as { message?: string; statusCode?: number };
           logger.error(`Web Push failed for ${sub.endpoint}: ${error.message || err}`);
-          if (error.statusCode === 410 || error.statusCode === 404) {
-            pushSubscriptionsDb.removePushSubscription(sub.endpoint);
-          }
+          pruneIfGone(sub.endpoint, error.statusCode);
           throw err;
         }
       })
     );
 
-    let sent = 0;
-    let failed = 0;
-    for (const res of results) {
-      if (res.status === 'fulfilled') {
-        sent += 1;
-      } else {
-        failed += 1;
-      }
-    }
-
-    if (sent === 0 && failed === 0) {
-      return { channel: 'web-push', status: 'skipped' };
-    }
+    const { sent, failed } = partitionSettled(results);
 
     return {
       channel: 'web-push',

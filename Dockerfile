@@ -66,8 +66,9 @@ RUN chmod +x ./docker-entrypoint.sh \
     && mkdir -p /app/data /app/.wwebjs_auth \
     && chown -R node:node /app
 
-USER node
-
+# NOTE: intentionally stay root here; docker-entrypoint.sh chowns bind-mounted
+# $DATA_DIR/$AUTH_DIR at runtime (they mask the build-time chown) then drops to
+# the unprivileged `node` user via setpriv/gosu/su.
 EXPOSE 9595
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \

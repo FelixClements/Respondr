@@ -44,16 +44,24 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = (event.notification.data?.url as string) || '/';
+  const target = new URL(targetUrl, self.location.origin).href;
 
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (clients) => {
       for (const client of clients) {
         if ('focus' in client && client.url.includes(self.location.origin)) {
+          try {
+            if ('navigate' in client && typeof client.navigate === 'function') {
+              await (client as WindowClient).navigate(target);
+            }
+          } catch {
+            /* navigate unsupported or blocked; fall through to focus */
+          }
           return client.focus();
         }
       }
       if (self.clients.openWindow) {
-        return self.clients.openWindow(targetUrl);
+        return self.clients.openWindow(target);
       }
     })
   );

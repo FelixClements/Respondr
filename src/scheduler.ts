@@ -15,7 +15,7 @@ export function start(): void {
     task = null;
   }
 
-  const minutes = parseInt(settingsDb.get('interval_minutes') || '30', 10) || 30;
+  const minutes = settingsDb.parseIntervalMinutes(undefined);
   const expression = buildExpression(minutes);
 
   if (!validate(expression)) {

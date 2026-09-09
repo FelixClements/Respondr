@@ -42,3 +42,11 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   auth TEXT NOT NULL,
   created_at INTEGER
 );
+
+-- Cross-process scan lock: one row per owner. runOnce deletes stale rows
+-- (locked_at older than SCAN_LOCK_STALE_MS) then INSERTs; conflict = contention.
+CREATE TABLE IF NOT EXISTS scan_locks (
+  id TEXT PRIMARY KEY,
+  owner TEXT NOT NULL,
+  locked_at INTEGER NOT NULL
+);

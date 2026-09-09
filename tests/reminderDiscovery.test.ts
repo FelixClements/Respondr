@@ -1,16 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-import { closeDb, initDb } from '../src/db/index.js';
-import * as chatStateDb from '../src/db/chatState.js';
+import { describe, it, expect } from 'vitest';
 import {
   hoursSince,
   isEligibleForReminder,
   enrichChat,
   statsForChats,
   discoverReminders,
-  buildDiscoveryContext
+  buildDiscoveryContext,
+  shouldResetDoneState
 } from '../src/domain/reminderDiscovery.js';
 import type { RawChat } from '../src/types.js';
 
@@ -29,20 +25,6 @@ const baseChat: RawChat = {
 };
 
 describe('reminderDiscovery', () => {
-  let dbPath = '';
-
-  beforeEach(() => {
-    dbPath = path.join(os.tmpdir(), `respondr-discovery-${Date.now()}.db`);
-    process.env.DB_PATH = dbPath;
-    initDb();
-  });
-
-  afterEach(() => {
-    closeDb();
-    if (dbPath && fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
-    delete process.env.DB_PATH;
-  });
-
   const now = 1000 * 1000 + 4 * 60 * 60 * 1000;
 
   it('calculates hours since timestamp', () => {
@@ -65,10 +47,24 @@ describe('reminderDiscovery', () => {
     expect(enriched.hoursSince).toBe(4);
   });
 
-  it('suppresses needsReply for done chats', () => {
-    chatStateDb.add('1', 'Alice', 'done');
+  it('suppresses needsReply for done chats without DB side effects', () => {
     const enriched = enrichChat(baseChat, { state: 'done', until: null, createdAt: now }, 3, now);
     expect(enriched.needsReply).toBe(false);
+    expect(
+      shouldResetDoneState({ state: 'done', until: null, createdAt: now }, baseChat.lastMessage!.timestampMs, now)
+    ).toBe(false);
+  });
+
+  it('returns reset intents for stale done chats instead of writing to DB', () => {
+    const context = buildDiscoveryContext([
+      { id: '1', state: 'done', until: null, created_at: now - 10_000 }
+    ]);
+    const newerChat = {
+      ...baseChat,
+      lastMessage: { ...baseChat.lastMessage!, timestampMs: now }
+    };
+    const result = discoverReminders([newerChat], 3, context, now);
+    expect(result.resetDoneIds).toContain('1');
   });
 
   it('aggregates stats using workflow state', () => {

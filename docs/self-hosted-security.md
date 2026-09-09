@@ -36,10 +36,12 @@ Assume attackers can reach your HTTP port. Assume they will probe `/api/auth-sta
 | Area | Notes |
 |------|-------|
 | TLS termination | App enforces `https://` in `BETTER_AUTH_URL` for production; terminate TLS at Caddy, nginx, or Traefik |
-| Proxy rate limits | App already rate-limits setup, sign-in, and auth-status. Set `TRUST_PROXY=true` in `.env` when deploying behind a reverse proxy so client IPs are extracted from `X-Real-IP` or `X-Forwarded-For`. Ensure your reverse proxy overwrites `X-Forwarded-For` with the true client IP (`$remote_addr`) to prevent header spoofing. |
+| Proxy rate limits | App already rate-limits setup, sign-in, and auth-status. Set `TRUST_PROXY=true` in `.env` when deploying behind a reverse proxy so client IPs are extracted from the rightmost valid `X-Forwarded-For` entry (falling back to `X-Real-IP` only when valid). Ensure your reverse proxy strips/overwrites **both** headers with the true client IP (`proxy_set_header X-Forwarded-For $remote_addr; proxy_set_header X-Real-IP $remote_addr;`) to prevent header-spoofing rate-limit bypass. |
 | Strong passwords | App minimum is 8 characters; use 12+ for admin accounts |
-| Container hardening | Container runs as unprivileged `node` user; Chromium uses `--no-sandbox` (typical in Docker) |
+| Container hardening | Entrypoint starts as root to `chown` bind-mounted `$DATA_DIR`/`$AUTH_DIR` to `node:node`, then drops to the unprivileged `node` user via `setpriv`/`gosu`/`su`. Chromium uses `--no-sandbox` (typical in Docker). If you bind-mount host dirs, `chown -R 1000:1000` them or set `user: "1000:1000"` in compose. |
 | Dependency CVEs | Keep images patched; `whatsapp-web.js`/puppeteer chain has upstream advisories |
+| Migrations | `prepareApp()` runs Better Auth migrations at boot with WAL + `busy_timeout=5000`. `npm run auth:migrate` is host/dev-only (requires devDependencies `tsx`, absent from the `omit=dev` runtime image) and is a no-op on import. |
+| Replica count | Run exactly 1 replica. Scan locks are DB-backed, but scheduler/rate-limit guards are per-process; 2 replicas sharing one DB can double-send. |
 
 ## First-boot setup options
 

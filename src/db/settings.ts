@@ -8,6 +8,17 @@ export const DEFAULTS: SettingsMap = {
   log_level: 'info'
 };
 
+// Canonical core-setting keys. filterCoreSettings in appServices must use
+// this list so adding a core setting touches one place, not three.
+export const CORE_SETTING_KEYS = [
+  'interval_minutes',
+  'chat_limit',
+  'threshold_hours',
+  'log_level'
+] as const;
+
+export type CoreSettingKey = (typeof CORE_SETTING_KEYS)[number];
+
 export function get(key: string): string | undefined {
   const db = getDb();
   const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
@@ -43,4 +54,20 @@ export function seedDefaults(): void {
   for (const [key, value] of Object.entries(DEFAULTS)) {
     insert.run(key, String(value));
   }
+}
+
+// Centralized numeric parsing policy (single place for fallbacks).
+export function parseIntervalMinutes(raw: unknown): number {
+  const parsed = parseInt(String(raw ?? get('interval_minutes') ?? '30'), 10);
+  return Number.isFinite(parsed) ? parsed : 30;
+}
+
+export function parseChatLimit(raw: unknown): number {
+  const parsed = parseInt(String(raw ?? get('chat_limit') ?? '50'), 10);
+  return Number.isFinite(parsed) ? parsed : 50;
+}
+
+export function parseThresholdHours(raw: unknown): number {
+  const parsed = parseFloat(String(raw ?? get('threshold_hours') ?? '3'));
+  return Number.isFinite(parsed) ? parsed : 3;
 }

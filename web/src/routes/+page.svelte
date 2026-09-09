@@ -5,7 +5,7 @@
   import MdNavbar from '$lib/components/md/MdNavbar.svelte';
   import MdFab from '$lib/components/md/MdFab.svelte';
   import { api } from '$lib/api';
-  import { fetchStatus, formatNextScan, statusLabel, statusColor } from '$lib/status';
+  import { formatNextScan, statusLabel, statusColor } from '$lib/status';
 
   let loading = $state(true);
   let scanning = $state(false);
@@ -20,8 +20,7 @@
   async function load() {
     loading = true;
     try {
-      const [dash] = await Promise.all([api.get('/dashboard'), fetchStatus()]);
-      dashboard = dash as typeof dashboard;
+      dashboard = (await api.get('/dashboard')) as typeof dashboard;
     } catch {
       /* handled by layout auth redirect */
     } finally {
