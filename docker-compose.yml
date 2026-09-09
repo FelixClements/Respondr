@@ -8,13 +8,21 @@ services:
       - "9595:9595"
     env_file:
       - path: .env
-        required: true
+        required: false
     environment:
-      - NODE_ENV=production
-      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
       - BETTER_AUTH_URL=${BETTER_AUTH_URL}
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
+      - DASHBOARD_USER=${DASHBOARD_USER:-}
+      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD:-}
+      - NODE_ENV=${NODE_ENV:-production}
+      - HOST=${HOST:-0.0.0.0}
+      - TRUST_PROXY=${TRUST_PROXY:-true}
+      - CHAT_LIMIT=${CHAT_LIMIT:-}
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
+      - VAPID_SUBJECT=${VAPID_SUBJECT:-}
       - SETUP_TOKEN=${SETUP_TOKEN:-}
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
       - DATA_DIR=/app/data
     volumes:
       - respondr_data:/app/data
