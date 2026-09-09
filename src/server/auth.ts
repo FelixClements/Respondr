@@ -1,9 +1,15 @@
 import { betterAuth } from 'better-auth';
+import { createLocalAccountIssuer } from 'better-auth/db';
 import { username } from 'better-auth/plugins';
 import { getDb, hasUsers as dbHasUsers } from '../db/index.js';
 import { runAuthMigrationsForOptions } from '../db/authMigrations.js';
 import * as logger from '../lib/logger.js';
 import { getAuthSecret, isProduction } from './secrets.js';
+
+const USERNAME_PATTERN = /^[a-zA-Z0-9_.]+$/;
+const MIN_USERNAME_LENGTH = 3;
+const MAX_USERNAME_LENGTH = 30;
+const MIN_PASSWORD_LENGTH = 8;
 
 const baseURL = process.env.BETTER_AUTH_URL || `http://localhost:${process.env.PORT || 9595}`;
 const localhostOrigin = `http://localhost:${process.env.PORT || 9595}`;
@@ -45,13 +51,41 @@ export async function createInitialUser(username: string, password: string): Pro
   if (await hasUsers()) {
     throw new Error('Account already configured');
   }
-  await auth.api.signUpEmail({
-    body: {
-      email: `${username}@local.respondr`,
-      name: username,
-      password,
-      username
-    } as never
+  const trimmed = username.trim();
+  if (
+    trimmed.length < MIN_USERNAME_LENGTH ||
+    trimmed.length > MAX_USERNAME_LENGTH ||
+    !USERNAME_PATTERN.test(trimmed)
+  ) {
+    throw new Error('Username is invalid');
+  }
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    throw new Error('Password is too short');
+  }
+
+  // Public sign-up is disabled. Create the first admin through the internal
+  // adapter so /api/setup and DASHBOARD_* bootstrap still work.
+  const ctx = await auth.$context;
+  const hash = await ctx.password.hash(password);
+  const normalizedUsername = trimmed.toLowerCase();
+  const createdUser = await ctx.internalAdapter.createUser(
+    {
+      email: `${normalizedUsername}@local.respondr`,
+      name: trimmed,
+      username: normalizedUsername,
+      emailVerified: true
+    },
+    { method: 'email-password' }
+  );
+  if (!createdUser) {
+    throw new Error('Failed to create user');
+  }
+  await ctx.internalAdapter.linkAccount({
+    userId: createdUser.id,
+    providerId: 'credential',
+    issuer: createLocalAccountIssuer('credential'),
+    accountId: createdUser.id,
+    password: hash
   });
 }
 
