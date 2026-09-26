@@ -37,7 +37,8 @@
   .md-fab {
     position: fixed;
     right: 1rem;
-    bottom: calc(4.75rem + env(safe-area-inset-bottom));
+    /* Tab bar is 5rem. Keep a 1rem gap so the button does not sit on it. */
+    bottom: calc(6rem + env(safe-area-inset-bottom));
     z-index: 25;
   }
 </style>

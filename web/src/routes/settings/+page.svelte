@@ -4,6 +4,7 @@
   import MdNavbar from '$lib/components/md/MdNavbar.svelte';
   import SettingsProfile from '$lib/components/md/SettingsProfile.svelte';
   import SettingsRow from '$lib/components/md/SettingsRow.svelte';
+  import { settingsListClass } from '$lib/uiSpacing';
   import { authClient } from '$lib/auth-client';
 
   const session = authClient.useSession();
@@ -21,7 +22,7 @@
 
   <SettingsProfile title="Respondr" subtitle={email} />
 
-  <List strong class="mt-2">
+  <List strong class={settingsListClass}>
     <SettingsRow
       rowTitle="Core settings"
       subtitle="Scan interval, limits"

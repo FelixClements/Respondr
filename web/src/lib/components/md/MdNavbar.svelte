@@ -1,6 +1,7 @@
 <script lang="ts">
   import { NavbarBackLink } from 'konsta/svelte';
   import type { Snippet } from 'svelte';
+  import { topBarInsetClass } from '$lib/uiSpacing';
 
   interface Props {
     title: string;
@@ -13,7 +14,7 @@
 </script>
 
 <header
-  class="md-top-bar sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-md-light-outline-variant/30 bg-md-light-surface dark:border-md-dark-outline-variant/30 dark:bg-md-dark-surface ps-safe pe-safe"
+  class="md-top-bar sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-md-light-outline-variant/30 bg-md-light-surface dark:border-md-dark-outline-variant/30 dark:bg-md-dark-surface {topBarInsetClass}"
 >
   {#if backLink && onBack}
     <NavbarBackLink onClick={onBack} />

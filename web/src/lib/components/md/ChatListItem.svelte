@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ListItem, Badge } from 'konsta/svelte';
   import Avatar from './Avatar.svelte';
+  import { replyBadgeClass } from '$lib/uiSpacing';
 
   interface Props {
     name: string;
@@ -27,7 +28,7 @@
         </span>
       {/if}
       {#if needsReply}
-        <Badge class="min-w-[1.25rem] h-5 px-1.5 text-xs font-semibold">!</Badge>
+        <Badge class={replyBadgeClass}>!</Badge>
       {:else if done}
         <span class="text-xs text-brand-success font-medium">Done</span>
       {/if}

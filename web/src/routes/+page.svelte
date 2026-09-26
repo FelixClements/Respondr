@@ -4,8 +4,9 @@
   import { Page, Block, Preloader, List, ListItem, Link } from 'konsta/svelte';
   import MdNavbar from '$lib/components/md/MdNavbar.svelte';
   import MdFab from '$lib/components/md/MdFab.svelte';
+  import { pageSubtitleClass, sectionLabelClass } from '$lib/uiSpacing';
   import { api } from '$lib/api';
-  import { formatNextScan, statusLabel, statusColor } from '$lib/status';
+  import { formatDateTime, formatNextScan, statusLabel, statusColor } from '$lib/status';
 
   let loading = $state(true);
   let scanning = $state(false);
@@ -41,10 +42,6 @@
 
   onMount(load);
 
-  function formatTime(ts: number) {
-    return new Date(ts).toLocaleString();
-  }
-
   const headerSubtitle = $derived(
     dashboard
       ? `${dashboard.stats.urgent ?? 0} need reply · next scan ${formatNextScan(dashboard.nextScan)}`
@@ -63,9 +60,7 @@
     <Block class="text-center py-12"><Preloader /></Block>
   {:else if dashboard}
     {#if headerSubtitle}
-      <p
-        class="px-4 pb-2 text-sm text-md-light-on-surface-variant dark:text-md-dark-on-surface-variant"
-      >
+      <p class={pageSubtitleClass}>
         {headerSubtitle}
       </p>
     {/if}
@@ -120,9 +115,7 @@
       </div>
     </div>
 
-    <p
-      class="px-4 py-2 text-sm font-medium text-md-light-on-surface-variant dark:text-md-dark-on-surface-variant"
-    >
+    <p class={sectionLabelClass}>
       Recent reminders
     </p>
 
@@ -135,7 +128,7 @@
     {:else}
       <List strong inset>
         {#each dashboard.recentReminders as reminder}
-          <ListItem title={reminder.chat_name} subtitle={formatTime(reminder.sent_at)} />
+          <ListItem title={reminder.chat_name} subtitle={formatDateTime(reminder.sent_at)} />
         {/each}
       </List>
     {/if}
