@@ -6,7 +6,7 @@
   import MdFab from '$lib/components/md/MdFab.svelte';
   import { pageSubtitleClass, sectionLabelClass } from '$lib/uiSpacing';
   import { api } from '$lib/api';
-  import { formatNextScan, statusLabel, statusColor } from '$lib/status';
+  import { formatDateTime, formatNextScan, statusLabel, statusColor } from '$lib/status';
 
   let loading = $state(true);
   let scanning = $state(false);
@@ -41,10 +41,6 @@
   }
 
   onMount(load);
-
-  function formatTime(ts: number) {
-    return new Date(ts).toLocaleString();
-  }
 
   const headerSubtitle = $derived(
     dashboard
@@ -132,7 +128,7 @@
     {:else}
       <List strong inset>
         {#each dashboard.recentReminders as reminder}
-          <ListItem title={reminder.chat_name} subtitle={formatTime(reminder.sent_at)} />
+          <ListItem title={reminder.chat_name} subtitle={formatDateTime(reminder.sent_at)} />
         {/each}
       </List>
     {/if}

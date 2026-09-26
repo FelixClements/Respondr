@@ -16,10 +16,27 @@ export async function fetchStatus(): Promise<StatusData> {
   return api.get<StatusData>('/status');
 }
 
+function pad(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+/** Local 24-hour clock, 00–23. Never uses the locale's AM/PM cycle. */
+function formatClock(date: Date, withSeconds: boolean): string {
+  const hours = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return withSeconds ? `${hours}:${pad(date.getSeconds())}` : hours;
+}
+
 export function formatNextScan(nextScan: string | Date | null): string {
   if (!nextScan) return '—';
   const date = typeof nextScan === 'string' ? new Date(nextScan) : nextScan;
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (Number.isNaN(date.getTime())) return '—';
+  return formatClock(date, false);
+}
+
+export function formatDateTime(ts: number): string {
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return '—';
+  return `${date.toLocaleDateString()} ${formatClock(date, true)}`;
 }
 
 export function statusLabel(status: string): string {
