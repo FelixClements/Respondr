@@ -4,6 +4,7 @@
   import MdNavbar from '$lib/components/md/MdNavbar.svelte';
   import ChatListItem from '$lib/components/md/ChatListItem.svelte';
   import SwipeableRow from '$lib/components/md/SwipeableRow.svelte';
+  import { archivedChatListClass, chatListClass, sectionLabelClass } from '$lib/uiSpacing';
   import { api } from '$lib/api';
 
   interface EnrichedChat {
@@ -91,7 +92,7 @@
       <p class="text-md-light-error dark:text-md-dark-error">{error}</p>
     </Block>
   {:else}
-    <List strong class="!my-0">
+    <List strong class={chatListClass}>
       {#each activeChats as chat (chat.id)}
         <SwipeableRow
           open={openSwipeId === chat.id}
@@ -129,12 +130,10 @@
     </List>
 
     {#if ignoredChats.length > 0}
-      <p
-        class="px-4 py-2 text-sm font-medium text-md-light-on-surface-variant dark:text-md-dark-on-surface-variant"
-      >
+      <p class={sectionLabelClass}>
         Archived
       </p>
-      <List strong class="!my-0">
+      <List strong class={archivedChatListClass}>
         {#each ignoredChats as chat (chat.id)}
           <SwipeableRow
             open={openSwipeId === chat.id}

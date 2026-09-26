@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { Page, Block, List, ListItem, Preloader } from 'konsta/svelte';
   import MdNavbar from '$lib/components/md/MdNavbar.svelte';
+  import { sectionLabelClass } from '$lib/uiSpacing';
   import { api } from '$lib/api';
 
   let reminders = $state<Array<{ chat_name: string; sent_at: number }>>([]);
@@ -29,9 +30,7 @@
   {#if loading}
     <Block class="text-center py-12"><Preloader /></Block>
   {:else}
-    <p
-      class="px-4 py-2 text-sm font-medium text-md-light-on-surface-variant dark:text-md-dark-on-surface-variant"
-    >
+    <p class={sectionLabelClass}>
       Reminders
     </p>
     <List strong inset>
@@ -40,9 +39,7 @@
       {/each}
     </List>
 
-    <p
-      class="mt-2 px-4 py-2 text-sm font-medium text-md-light-on-surface-variant dark:text-md-dark-on-surface-variant"
-    >
+    <p class="mt-2 {sectionLabelClass}">
       Scans
     </p>
     <List strong inset>

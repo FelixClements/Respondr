@@ -4,6 +4,7 @@
   import { Page, Block, Preloader, List, ListItem, Link } from 'konsta/svelte';
   import MdNavbar from '$lib/components/md/MdNavbar.svelte';
   import MdFab from '$lib/components/md/MdFab.svelte';
+  import { pageSubtitleClass, sectionLabelClass } from '$lib/uiSpacing';
   import { api } from '$lib/api';
   import { formatNextScan, statusLabel, statusColor } from '$lib/status';
 
@@ -63,9 +64,7 @@
     <Block class="text-center py-12"><Preloader /></Block>
   {:else if dashboard}
     {#if headerSubtitle}
-      <p
-        class="px-4 pb-2 text-sm text-md-light-on-surface-variant dark:text-md-dark-on-surface-variant"
-      >
+      <p class={pageSubtitleClass}>
         {headerSubtitle}
       </p>
     {/if}
@@ -120,9 +119,7 @@
       </div>
     </div>
 
-    <p
-      class="px-4 py-2 text-sm font-medium text-md-light-on-surface-variant dark:text-md-dark-on-surface-variant"
-    >
+    <p class={sectionLabelClass}>
       Recent reminders
     </p>
 
