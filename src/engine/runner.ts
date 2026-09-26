@@ -49,6 +49,8 @@ export async function runOnce() {
       throw new Error('WhatsApp client is not ready');
     }
 
+    await getAppDeps().whatsapp.keepAlive();
+
     const { totalChecked: checked, forgotten } = await scanner.run();
     totalChecked = checked;
 

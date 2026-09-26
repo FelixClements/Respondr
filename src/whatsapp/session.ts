@@ -5,6 +5,7 @@ import path from 'node:path';
 import * as logger from '../lib/logger.js';
 import type { RawChat, WhatsAppHealth, WhatsAppStatus } from '../types.js';
 import { scrapeRecentChatsInBrowser } from './scrape/recentChats.js';
+import { performKeepAlive } from './keepAlive.js';
 
 const { Client, LocalAuth } = wweb;
 
@@ -52,6 +53,7 @@ let qrDataUrl: string | null = null;
 let status = 'initializing';
 let isReady = false;
 let launchError: string | null = null;
+let lastDisconnectReason: string | null = null;
 
 function clearProfileLocks(): void {
   const sessionDir = path.join(AUTH_DIR, 'session');
@@ -104,12 +106,14 @@ client.on('ready', () => {
   isReady = true;
   status = 'ready';
   qrDataUrl = null;
+  lastDisconnectReason = null;
   logger.info('WhatsApp client is ready.');
 });
 
 client.on('disconnected', (reason: string) => {
   isReady = false;
   status = 'disconnected';
+  lastDisconnectReason = reason;
   logger.warn('WhatsApp client disconnected:', reason);
 });
 
@@ -159,6 +163,15 @@ export async function restartClient(): Promise<void> {
   status = 'initializing';
   isReady = false;
   return startClient();
+}
+
+export async function keepAlive(): Promise<void> {
+  await performKeepAlive({
+    disconnectReason: lastDisconnectReason,
+    sendPresenceAvailable: () => client.sendPresenceAvailable(),
+    getState: async () => (await client.getState()) ?? null,
+    restartClient
+  });
 }
 
 export function getQrDataUrl(): string | null {
