@@ -15,3 +15,8 @@ export const archivedChatListClass = '!my-0';
 
 /** 16px under the profile. Not !my-0, so the list keeps its bottom margin. */
 export const settingsListClass = 'mt-4';
+
+export const swipeActionLayoutClass =
+  'flex flex-col items-center justify-center gap-2 text-sm font-medium';
+
+export const replyBadgeClass = 'min-w-[1.25rem] h-5 px-2 text-xs font-semibold';

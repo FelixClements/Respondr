@@ -5,8 +5,10 @@ import {
   archivedChatListClass,
   chatListClass,
   pageSubtitleClass,
+  replyBadgeClass,
   sectionLabelClass,
   settingsListClass,
+  swipeActionLayoutClass,
   topBarInsetClass
 } from '../../web/src/lib/uiSpacing';
 
@@ -80,5 +82,31 @@ describe('section labels and list gaps', () => {
     expect(history).toContain('class={sectionLabelClass}');
     expect(history).toContain('class="mt-2 {sectionLabelClass}"');
     expect(history).not.toContain('py-2');
+  });
+});
+
+describe('swipe actions and reply badge', () => {
+  it('puts 8px between a swipe icon and its label on both sides', () => {
+    expect(swipeActionLayoutClass).toBe(
+      'flex flex-col items-center justify-center gap-2 text-sm font-medium'
+    );
+    const row = source('web/src/lib/components/md/SwipeableRow.svelte');
+    expect(row).toContain("import { swipeActionLayoutClass } from '$lib/uiSpacing'");
+    const uses = row.match(/\{swipeActionLayoutClass\}/g) ?? [];
+    expect(uses).toHaveLength(2);
+    expect(row).not.toContain('gap-0.5');
+  });
+
+  it('gives the needs-reply badge 8px of horizontal padding without changing its height', () => {
+    expect(replyBadgeClass).toBe('min-w-[1.25rem] h-5 px-2 text-xs font-semibold');
+    const item = source('web/src/lib/components/md/ChatListItem.svelte');
+    expect(item).toContain("import { replyBadgeClass } from '$lib/uiSpacing'");
+    expect(item).toContain('class={replyBadgeClass}');
+    expect(item).not.toContain('px-1.5');
+  });
+
+  it('does not add a ListInput padding override', () => {
+    const css = source('web/src/app.css');
+    expect(css).not.toContain('k-list-input');
   });
 });

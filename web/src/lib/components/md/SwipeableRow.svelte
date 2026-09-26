@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import MdSymbol from './MdSymbol.svelte';
+  import { swipeActionLayoutClass } from '$lib/uiSpacing';
 
   export interface SwipeAction {
     id: string;
@@ -104,7 +105,7 @@
       {#each leftActions as action (action.id)}
         <button
           type="button"
-          class="flex flex-col items-center justify-center gap-0.5 text-sm font-medium {action.class}"
+          class="{swipeActionLayoutClass} {action.class}"
           style:width="{ACTION_WIDTH}px"
           onclick={() => runAction(action)}
         >
@@ -120,7 +121,7 @@
       {#each rightActions as action (action.id)}
         <button
           type="button"
-          class="flex flex-col items-center justify-center gap-0.5 text-sm font-medium {action.class}"
+          class="{swipeActionLayoutClass} {action.class}"
           style:width="{ACTION_WIDTH}px"
           onclick={() => runAction(action)}
         >
