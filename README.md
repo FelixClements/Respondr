@@ -1,21 +1,40 @@
 # Respondr — WhatsApp Response Reminder Engine
 
-An automated, localized background service designed for individuals who struggle with message management on personal WhatsApp accounts. Rather than utilizing commercial business APIs that strip away personal chat data, this lightweight service passively monitors your recent chats and reminds you when a contact is still waiting for a reply.
+Respondr watches your personal WhatsApp chats and reminds you when someone is still waiting on a reply. It runs on a machine you control, links through WhatsApp's normal "linked devices" QR flow, and does not send messages back.
 
-By securely mirroring your active conversation queue, the engine checks your chat list at set intervals, evaluates the direction of the last message, and flags conversations where you owe a response.
+The dashboard is a SvelteKit PWA with a Material Design 3 layout (Konsta). After you sign in, three tabs cover the app: **Updates**, **Chats**, and **Settings**.
+
+## Screenshots
+
+These shots use sample conversations so the layout is visible without a live WhatsApp account. The QR image is a placeholder, not a pairing code. The app follows the device color scheme; the images below are the light theme.
+
+<p align="center">
+  <img src="docs/screenshots/updates.png" alt="Updates tab with connection status, chats that need a reply, and recent reminders" width="200">
+  <img src="docs/screenshots/chats.png" alt="Chat list showing who needs a reply, who is done, and who is archived" width="200">
+  <img src="docs/screenshots/chats-swipe.png" alt="Swiping a chat to the right reveals Done" width="200">
+  <img src="docs/screenshots/settings.png" alt="Settings for scan rules, notifications, WhatsApp linking, and history" width="200">
+</p>
+<p align="center">
+  <img src="docs/screenshots/notifications.png" alt="Notification settings for NTFY, Gotify, and Web Push" width="200">
+  <img src="docs/screenshots/qr.png" alt="Link device screen asking you to scan the WhatsApp QR code" width="200">
+</p>
 
 ---
 
 ## Key Features
 
-* **Zero Meta Business Requirements:** Runs natively against a standard personal WhatsApp account with no registration or verification fees.
-* **Directional Context Awareness:** Automatically flags conversations where the final message was sent by the contact (`fromMe === false`).
-* **Custom Elapsed Time Thresholds:** Define your own rule for what counts as a forgotten response.
-* **Smart Filter Optimization:** Skips archived threads, muted chats, and group messages to prevent notification fatigue.
-* **Secure Session Persistence:** Uses localized authentication state data, so you only scan the QR code once.
-* **Anti-Ban Pattern Mimicry:** Processes only the top recent active chats at spaced-out intervals to simulate natural usage.
-* **Web Dashboard:** SvelteKit + Konsta UI PWA — manage settings, chats, notifications, and history from any device.
-* **Flexible Notifications:** Sends reminders via NTFY, Gotify, and Web Push (PWA).
+* **Personal WhatsApp account:** Links as a companion device. No Meta Business API, registration, or verification fees.
+* **Reply detection:** Flags a chat when the last message is from the contact and older than your threshold. A reaction you sent on that message counts as handled.
+* **Narrow scan:** Skips groups, WhatsApp-archived threads, and muted chats. Only the most recent chats are checked, on a spaced interval.
+* **Rules you can change in the app:** Scan interval (1–59 minutes), chat limit (1–200), and threshold (1–168 hours). Defaults are 30 minutes, 50 chats, and 3 hours. Saving them reschedules the scanner.
+* **Link stay-alive:** Each scan sends a presence update so WhatsApp keeps the linked device active, and restarts the browser session if the connection has gone stale.
+* **Chat actions:** Swipe right to mark a chat done (quiet until a newer message arrives). Swipe left to ignore it, which moves it to Archived inside Respondr. Swipe an archived chat to restore it.
+* **Updates tab:** Connection status, how many chats need a reply, a snoozed count (done + ignored), the next scan time, recent reminders, and **Scan now**.
+* **Notifications:** NTFY, Gotify, and Web Push. Turn them on in Settings and send a test from the notifications screen.
+* **Installable PWA:** Add it to your home screen for Web Push. On iOS, push requires iOS 16.4+ and the app opened from the home screen, not Safari.
+* **One admin:** Better Auth with public sign-up disabled. Create the account with `DASHBOARD_USER` / `DASHBOARD_PASSWORD`, or finish `/setup`.
+* **Session persistence:** The WhatsApp session is stored locally, so you scan the QR code once.
+* **Appearance:** Dark mode follows the system. Times use a 24-hour clock.
 
 ---
 
@@ -28,21 +47,23 @@ By securely mirroring your active conversation queue, the engine checks your cha
   [ whatsapp-web.js (Puppeteer Instance) ]
                 │
                 ├──► 1. Sweeps top active chats on a cron schedule
-                ├──► 2. Evaluates the direction of the latest message
+                ├──► 2. Sends presence, then reads the latest message
                 │
                 ▼
         [ Conditional Filter ]
                 │
-                ├──► Is last message from you? ──► [ SKIP CHAT ]
-                └──► Is last message from contact?
+                ├──► From you, or you reacted? ──► [ SKIP CHAT ]
+                ├──► Group, archived, or muted? ──► [ SKIP CHAT ]
+                ├──► Marked done or ignored? ────► [ SKIP CHAT ]
+                └──► From the contact, older than the threshold
                              │
-                             └──► Age > threshold? ──► [ TRIGGER ALERT ]
+                             └──► [ NTFY / Gotify / Web Push ]
 ```
 
-1. **Authentication:** The project boots a headless Chromium instance. On first run, open `/qr` in the dashboard to see the QR code, then scan it with WhatsApp on your phone.
-2. **Analysis Loop:** A background cron scheduler sweeps the metadata of your most recent chats.
-3. **Logic Assessment:** If the contact sent the last message and the configured time threshold is exceeded, the engine triggers an alert.
-4. **Outbound Notification:** The alert is sent via NTFY/Gotify without interacting with WhatsApp itself.
+1. **Authentication:** The server starts a headless Chromium instance. On a computer, open **Settings → QR Code** (or `/qr`) and scan it from WhatsApp → Linked devices → Link a device. On a phone, **Settings → Link WhatsApp** lists those same steps.
+2. **Analysis loop:** A cron scheduler sweeps the most recent chats. Each run also pings the session so the link stays up.
+3. **Logic assessment:** If the contact sent the last message, you have not reacted to it, the chat is not done or ignored, and the message is older than the threshold, Respondr queues a reminder.
+4. **Outbound notification:** The reminder goes out through whichever of NTFY, Gotify, and Web Push you enabled. Respondr does not send a WhatsApp message.
 
 ---
 
@@ -58,7 +79,7 @@ By securely mirroring your active conversation queue, the engine checks your cha
 
 This is the supported way to run Respondr 24/7 on a machine you control (home Linux box, NAS with Docker, or a small VPS on your LAN). Docker Compose builds the image, runs Chromium, persists the WhatsApp session, and restarts the container after reboot.
 
-Compose always sets `NODE_ENV=production`. Production **will not start** with `http://192.168.x.x:9595`. Put TLS in front (Caddy, nginx, or Traefik) and set `BETTER_AUTH_URL` to that `https://` origin. Do not publish port 9595 to the public internet.
+Compose defaults `NODE_ENV` to `production` (override it only if you mean to). Production **will not start** with `http://192.168.x.x:9595`. Put TLS in front (Caddy, nginx, or Traefik) and set `BETTER_AUTH_URL` to that `https://` origin. Do not publish port 9595 to the public internet.
 
 Full operator notes: [`docs/self-hosted-security.md`](docs/self-hosted-security.md).
 
@@ -142,7 +163,7 @@ The container is healthy when logs show the Hono server listening and Better Aut
 
 1. Visit `https://respondr.example.com` (or your LAN hostname).
 2. Sign in with `DASHBOARD_USER` / `DASHBOARD_PASSWORD` (or finish `/setup` if you used `SETUP_TOKEN`).
-3. Open **QR** and scan with WhatsApp on your phone.
+3. Open **Settings → QR Code** and scan it from WhatsApp on your phone (Linked devices → Link a device).
 4. Keep the server running. The session is stored in the `respondr_wwebjs_auth` volume; the SQLite database is in `respondr_data`.
 
 ### 5. Day-to-day operations
