@@ -10,6 +10,7 @@
 
   let loading = $state(true);
   let scanning = $state(false);
+  let notice = $state<{ text: string; isError: boolean } | null>(null);
   let dashboard = $state<{
     status: { status: string; isReady: boolean };
     stats: { total: number | null; urgent: number | null; snoozed: number };
@@ -22,8 +23,8 @@
     loading = true;
     try {
       dashboard = (await api.get('/dashboard')) as typeof dashboard;
-    } catch {
-      /* handled by layout auth redirect */
+    } catch (err) {
+      notice = { text: err instanceof Error ? err.message : 'Failed to load dashboard', isError: true };
     } finally {
       loading = false;
     }
@@ -32,12 +33,30 @@
   async function runScan() {
     if (scanning) return;
     scanning = true;
+    notice = null;
     try {
-      await api.post('/run');
+      // A scan that ran but failed (e.g. WhatsApp not ready) still returns 200 with `error`.
+      const result = await api.post<{ totalChecked: number; remindersSent: number; error?: string | null }>(
+        '/run'
+      );
+      notice = result.error
+        ? { text: `Scan failed: ${result.error}`, isError: true }
+        : {
+            text: `Checked ${result.totalChecked} chats · ${result.remindersSent} reminders sent`,
+            isError: false
+          };
       await load();
+    } catch (err) {
+      // 429 cooldown and 409 already-running land here.
+      notice = { text: err instanceof Error ? err.message : 'Scan failed', isError: true };
     } finally {
       scanning = false;
     }
+  }
+
+  function refresh() {
+    notice = null;
+    load();
   }
 
   onMount(load);
@@ -52,9 +71,20 @@
 <Page class="md-page">
   <MdNavbar title="Updates">
     {#snippet actions()}
-      <Link onClick={load}>Refresh</Link>
+      <Link onClick={refresh}>Refresh</Link>
     {/snippet}
   </MdNavbar>
+
+  {#if notice}
+    <p
+      class="px-4 pt-3 text-sm text-center {notice.isError
+        ? 'text-md-light-error dark:text-md-dark-error'
+        : 'text-md-light-on-surface-variant dark:text-md-dark-on-surface-variant'}"
+      role={notice.isError ? 'alert' : 'status'}
+    >
+      {notice.text}
+    </p>
+  {/if}
 
   {#if loading}
     <Block class="text-center py-12"><Preloader /></Block>

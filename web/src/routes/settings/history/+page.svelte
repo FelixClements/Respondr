@@ -12,12 +12,18 @@
     Array<{ run_at: number; chats_checked: number; reminders_sent: number; error: string | null }>
   >([]);
   let loading = $state(true);
+  let error = $state<string | null>(null);
 
   onMount(async () => {
-    const data = await api.get<{ reminders: typeof reminders; scans: typeof scans }>('/history');
-    reminders = data.reminders;
-    scans = data.scans;
-    loading = false;
+    try {
+      const data = await api.get<{ reminders: typeof reminders; scans: typeof scans }>('/history');
+      reminders = data.reminders;
+      scans = data.scans;
+    } catch (err) {
+      error = err instanceof Error ? err.message : 'Failed to load history';
+    } finally {
+      loading = false;
+    }
   });
 
 </script>
@@ -27,6 +33,10 @@
 
   {#if loading}
     <Block class="text-center py-12"><Preloader /></Block>
+  {:else if error}
+    <Block class="text-center py-8">
+      <p class="text-md-light-error dark:text-md-dark-error">{error}</p>
+    </Block>
   {:else}
     <p class={sectionLabelClass}>
       Reminders

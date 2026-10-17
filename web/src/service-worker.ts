@@ -34,7 +34,10 @@ self.addEventListener('push', (event) => {
     body: payload.body || '',
     icon: payload.icon || '/icon-192.png',
     badge: '/icon-192.png',
-    tag: payload.tag || 'respondr-reminder',
+    tag: payload.tag || 'respondr',
+    // Reminders repeat every scan by design; alert again when one replaces
+    // an earlier notification with the same tag.
+    renotify: true,
     data: { url: payload.url || '/' }
   };
 
