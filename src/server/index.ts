@@ -5,6 +5,7 @@ import { secureHeaders } from 'hono/secure-headers';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as logger from '../lib/logger.js';
+import { getDb } from '../db/index.js';
 import {
   auth,
   ensureBootstrapUser,
@@ -56,9 +57,23 @@ export function createApp() {
       }
     })
   );
+  // Debug only: at info, every static asset and status poll would crowd real
+  // events out of the 1000-entry log buffer shown in Settings > Logs.
   app.use('*', async (c, next) => {
-    logger.info(`${c.req.method} ${c.req.path}`);
+    logger.debug(`${c.req.method} ${c.req.path}`);
     await next();
+  });
+
+  // Liveness for the Docker HEALTHCHECK: the server answers and the database
+  // is readable. WhatsApp is left out on purpose: waiting for a QR scan or an
+  // auto-reconnect is not a reason to mark the container unhealthy.
+  app.get('/healthz', (c) => {
+    try {
+      getDb().prepare('SELECT 1').get();
+      return c.json({ ok: true });
+    } catch {
+      return c.json({ ok: false }, 503);
+    }
   });
 
   // Better Auth — must be before catch-all routes
