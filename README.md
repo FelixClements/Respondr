@@ -15,7 +15,6 @@ These shots use sample conversations so the layout is visible without a live Wha
   <img src="docs/screenshots/settings.png" alt="Settings for scan rules, notifications, WhatsApp linking, and history" width="200">
 </p>
 <p align="center">
-  <img src="docs/screenshots/notifications.png" alt="Web Push notification settings" width="200">
   <img src="docs/screenshots/qr.png" alt="Link device screen asking you to scan the WhatsApp QR code" width="200">
 </p>
 
