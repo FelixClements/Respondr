@@ -41,6 +41,9 @@ export default defineConfig({
       injectManifest: {
         globPatterns: [
           'client/**/*.{js,css,ico,png,svg,webp,webmanifest}',
+          // Icon font and Latin Roboto, so the UI renders offline. Other
+          // Roboto subsets load on demand via unicode-range.
+          'client/**/{material-symbols-outlined-*,roboto-latin-[0-9]*}.woff2',
           'prerendered/**/*.{html,json}'
         ]
       }

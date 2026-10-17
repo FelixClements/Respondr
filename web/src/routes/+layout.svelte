@@ -8,6 +8,11 @@
   import MdTabbar from '$lib/components/md/MdTabbar.svelte';
   import { systemPrefersDark, watchSystemDark } from '$lib/dark-mode';
   import { pwaInfo } from 'virtual:pwa-info';
+  // Self-hosted fonts: no request to Google, and they work offline in the PWA.
+  import '@fontsource/roboto/400.css';
+  import '@fontsource/roboto/500.css';
+  import '@fontsource/roboto/700.css';
+  import '@fontsource-variable/material-symbols-outlined/fill.css';
   import '../app.css';
 
   const session = authClient.useSession();

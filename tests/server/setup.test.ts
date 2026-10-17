@@ -177,9 +177,9 @@ describe('setup routes', () => {
     expect(csp).toContain('script-src');
     expect(csp).toContain("'self'");
     expect(csp).toContain('style-src');
-    expect(csp).toContain('https://fonts.googleapis.com');
     expect(csp).toContain('font-src');
-    expect(csp).toContain('https://fonts.gstatic.com');
+    // Fonts are self-hosted; no third-party style or font origins.
+    expect(csp).not.toMatch(/fonts\.googleapis\.com|fonts\.gstatic\.com/);
     expect(csp).toContain('object-src');
     expect(permissions).toBeDefined();
     expect(permissions).toContain('camera=()');
