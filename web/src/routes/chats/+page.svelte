@@ -19,6 +19,7 @@
   let loading = $state(true);
   let chats = $state<EnrichedChat[]>([]);
   let error = $state<string | null>(null);
+  let actionError = $state<string | null>(null);
   let openSwipeId = $state<string | null>(null);
 
   async function load() {
@@ -34,21 +35,14 @@
     }
   }
 
-  async function markDone(chat: EnrichedChat) {
+  async function chatAction(chat: EnrichedChat, action: 'done' | 'ignore' | 'unignore') {
     openSwipeId = null;
-    await api.post(`/chats/${encodeURIComponent(chat.id)}/done`, { name: chat.name });
-    await load();
-  }
-
-  async function markIgnore(chat: EnrichedChat) {
-    openSwipeId = null;
-    await api.post(`/chats/${encodeURIComponent(chat.id)}/ignore`, { name: chat.name });
-    await load();
-  }
-
-  async function unignore(chat: EnrichedChat) {
-    openSwipeId = null;
-    await api.post(`/chats/${encodeURIComponent(chat.id)}/unignore`);
+    actionError = null;
+    try {
+      await api.post(`/chats/${encodeURIComponent(chat.id)}/${action}`, { name: chat.name });
+    } catch (err) {
+      actionError = `Could not update ${chat.name}: ${err instanceof Error ? err.message : 'request failed'}`;
+    }
     await load();
   }
 
@@ -85,6 +79,12 @@
     {/snippet}
   </MdNavbar>
 
+  {#if actionError}
+    <p class="px-4 pt-3 text-sm text-center text-md-light-error dark:text-md-dark-error" role="alert">
+      {actionError}
+    </p>
+  {/if}
+
   {#if loading}
     <Block class="text-center py-12"><Preloader /></Block>
   {:else if error}
@@ -104,7 +104,7 @@
               icon: 'check',
               class:
                 'bg-brand-success text-white dark:bg-brand-success dark:text-white',
-              onClick: () => markDone(chat)
+              onClick: () => chatAction(chat, 'done')
             }
           ]}
           rightActions={[
@@ -114,7 +114,7 @@
               icon: 'block',
               class:
                 'bg-md-light-surface-container-highest dark:bg-md-dark-surface-container-highest text-md-light-on-surface-variant dark:text-md-dark-on-surface-variant',
-              onClick: () => markIgnore(chat)
+              onClick: () => chatAction(chat, 'ignore')
             }
           ]}
         >
@@ -145,7 +145,7 @@
                 icon: 'undo',
                 class:
                   'bg-md-light-primary-container dark:bg-md-dark-primary-container text-md-light-on-primary-container dark:text-md-dark-on-primary-container',
-                onClick: () => unignore(chat)
+                onClick: () => chatAction(chat, 'unignore')
               }
             ]}
           >
