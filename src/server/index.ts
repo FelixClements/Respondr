@@ -41,9 +41,9 @@ export function createApp() {
         // scripts, so 'unsafe-inline' is required until nonce plumbing lands.
         // Theme toggle is externalized to /theme-init.js to stay under 'self'.
         scriptSrc: ["'self'", "'unsafe-inline'"],
-        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'blob:'],
-        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        fontSrc: ["'self'", 'data:'],
         connectSrc: ["'self'"],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
