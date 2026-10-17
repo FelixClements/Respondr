@@ -9,7 +9,7 @@ import { buildTestPayload } from '../notifications/reminderContent.js';
 import { checkPushEndpoint, checkPushKeys } from '../lib/pushValidation.js';
 import * as scheduler from '../scheduler.js';
 import * as logger from '../lib/logger.js';
-import type { AppDeps } from '../whatsapp/create.js';
+import type * as session from '../whatsapp/session.js';
 
 import { CORE_SETTING_KEYS } from '../db/settings.js';
 import type { SettingsMap } from '../types.js';
@@ -34,8 +34,8 @@ function workflowMap() {
   return stateById;
 }
 
-export function createAppServices(deps: AppDeps) {
-  const { chatSource, whatsapp } = deps;
+/** The WhatsApp session is passed in so tests can supply a stub. */
+export function createAppServices(whatsapp: typeof session) {
 
   return {
     getStatusPayload() {
@@ -85,7 +85,7 @@ export function createAppServices(deps: AppDeps) {
       };
 
       try {
-        const raw = await chatSource.getRecentChats(limit);
+        const raw = await whatsapp.getRecentChats(limit);
         const analysis = reminderDiscovery.statsForChats(raw, workflowMap(), thresholdHours, now);
         stats.total = analysis.total;
         stats.urgent = analysis.urgent;
@@ -109,7 +109,7 @@ export function createAppServices(deps: AppDeps) {
       const status = whatsapp.getStatus();
 
       try {
-        const raw = await chatSource.getRecentChats(limit);
+        const raw = await whatsapp.getRecentChats(limit);
         const stateById = workflowMap();
         const now = Date.now();
         const chats = raw.map((chat) =>

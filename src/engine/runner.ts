@@ -1,7 +1,7 @@
 import * as scanner from './scanner.js';
 import * as notifications from '../notifications/index.js';
 import * as historyDb from '../db/history.js';
-import { getAppDeps } from '../whatsapp/create.js';
+import * as whatsapp from '../whatsapp/session.js';
 import { createGuard } from '../lib/guard.js';
 import * as logger from '../lib/logger.js';
 
@@ -26,11 +26,11 @@ export async function runOnce() {
   logger.debug('runOnce started');
 
   try {
-    if (!getAppDeps().whatsapp.getStatus().isReady) {
+    if (!whatsapp.getStatus().isReady) {
       throw new Error('WhatsApp client is not ready');
     }
 
-    await getAppDeps().whatsapp.keepAlive();
+    await whatsapp.keepAlive();
 
     const { totalChecked: checked, forgotten } = await scanner.run();
     totalChecked = checked;

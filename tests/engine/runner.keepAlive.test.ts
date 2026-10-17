@@ -10,19 +10,13 @@ let keepAliveImpl: () => Promise<void> = async () => {
   calls.push('keepAlive');
 };
 
-vi.mock('../../src/whatsapp/create.js', () => ({
-  getAppDeps: () => ({
-    chatSource: {
-      getRecentChats: async () => {
-        calls.push('scrape');
-        return [];
-      }
-    },
-    whatsapp: {
-      getStatus: () => ({ status: isReady ? 'ready' : 'disconnected', isReady }),
-      keepAlive: () => keepAliveImpl()
-    }
-  })
+vi.mock('../../src/whatsapp/session.js', () => ({
+  getRecentChats: async () => {
+    calls.push('scrape');
+    return [];
+  },
+  getStatus: () => ({ status: isReady ? 'ready' : 'disconnected', isReady, reconnectAt: null }),
+  keepAlive: () => keepAliveImpl()
 }));
 
 describe('runOnce keepalive', () => {

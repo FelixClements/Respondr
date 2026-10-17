@@ -1,13 +1,13 @@
 import { Hono } from 'hono';
 import { createAppServices } from '../application/appServices.js';
-import { getAppDeps } from '../whatsapp/create.js';
+import * as whatsapp from '../whatsapp/session.js';
 import type { AppVariables } from './middleware.js';
 
 const MANUAL_RUN_COOLDOWN_MS = 60 * 1000;
 
 export function buildApiApp() {
   const app = new Hono<{ Variables: AppVariables }>();
-  const services = createAppServices(getAppDeps());
+  const services = createAppServices(whatsapp);
   let lastManualRun = 0;
 
   app.get('/status', (c) => c.json(services.getStatusPayload()));
