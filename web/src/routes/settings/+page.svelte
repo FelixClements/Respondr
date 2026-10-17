@@ -47,7 +47,12 @@
       icon="history"
       onClick={() => goto('/settings/history')}
     />
-    <SettingsRow rowTitle="Logs" icon="article" onClick={() => goto('/settings/logs')} />
+    <SettingsRow
+      rowTitle="Logs"
+      subtitle="Recent server logs"
+      icon="article"
+      onClick={() => goto('/settings/logs')}
+    />
     <SettingsRow
       rowTitle="QR Code"
       subtitle="Desktop only"
