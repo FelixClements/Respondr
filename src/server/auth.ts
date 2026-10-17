@@ -1,5 +1,4 @@
 import { betterAuth } from 'better-auth';
-import { createLocalAccountIssuer } from 'better-auth/db';
 import { username } from 'better-auth/plugins';
 import { getDb, hasUsers as dbHasUsers } from '../db/index.js';
 import { runAuthMigrationsForOptions } from '../db/authMigrations.js';
@@ -83,7 +82,6 @@ export async function createInitialUser(username: string, password: string): Pro
     await ctx.internalAdapter.linkAccount({
       userId: createdUser.id,
       providerId: 'credential',
-      issuer: createLocalAccountIssuer('credential'),
       accountId: createdUser.id,
       password: hash
     });

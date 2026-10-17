@@ -26,6 +26,10 @@ CREATE TABLE IF NOT EXISTS scan_logs (
   error TEXT
 );
 
+-- History is read newest-first and pruned by age.
+CREATE INDEX IF NOT EXISTS idx_reminders_sent_at ON reminders (sent_at);
+CREATE INDEX IF NOT EXISTS idx_scan_logs_run_at ON scan_logs (run_at);
+
 CREATE TABLE IF NOT EXISTS push_subscriptions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   endpoint TEXT NOT NULL UNIQUE,

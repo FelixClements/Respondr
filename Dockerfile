@@ -72,6 +72,6 @@ RUN chmod +x ./docker-entrypoint.sh \
 EXPOSE 9595
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:9595/ || exit 1
+  CMD curl -fsS "http://localhost:${PORT:-9595}/healthz" || exit 1
 
 CMD ["./docker-entrypoint.sh"]

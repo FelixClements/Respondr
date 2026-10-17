@@ -31,6 +31,7 @@ These shots use sample conversations so the layout is visible without a live Wha
 * **Chat actions:** Swipe right to mark a chat done (quiet until a newer message arrives). Swipe left to ignore it, which moves it to Archived inside Respondr. Swipe an archived chat to restore it.
 * **Updates tab:** Connection status, how many chats need a reply, a snoozed count (done + ignored), the next scan time, recent reminders, and **Scan now**.
 * **Notifications:** Web Push to the installed PWA. Turn it on in **Settings → Notifications** and send a test from there.
+* **History:** Reminders and scans from the last 90 days, under **Settings → History**. Older entries are pruned after each scan.
 * **Installable PWA:** Add it to your home screen for Web Push. On iOS, push requires iOS 16.4+ and the app opened from the home screen, not Safari.
 * **One admin:** Better Auth with public sign-up disabled. Create the account with `DASHBOARD_USER` / `DASHBOARD_PASSWORD`, or finish `/setup`.
 * **Session persistence:** The WhatsApp session is stored locally, so you scan the QR code once.
@@ -46,7 +47,7 @@ These shots use sample conversations so the layout is visible without a live Wha
                 ▼
   [ whatsapp-web.js (Puppeteer Instance) ]
                 │
-                ├──► 1. Sweeps top active chats on a cron schedule
+                ├──► 1. Sweeps top active chats every scan interval
                 ├──► 2. Sends presence, then reads the latest message
                 │
                 ▼
@@ -61,7 +62,7 @@ These shots use sample conversations so the layout is visible without a live Wha
 ```
 
 1. **Authentication:** The server starts a headless Chromium instance. On a computer, open **Settings → QR Code** (or `/qr`) and scan it from WhatsApp → Linked devices → Link a device. On a phone, **Settings → Link WhatsApp** lists those same steps.
-2. **Analysis loop:** A cron scheduler sweeps the most recent chats. Each run also pings the session so the link stays up.
+2. **Analysis loop:** Every scan interval (counted from startup or the last settings change), Respondr sweeps the most recent chats. Each run also pings the session so the link stays up.
 3. **Logic assessment:** If the contact sent the last message, you have not reacted to it, the chat is not done or ignored, and the message is older than the threshold, Respondr queues a reminder.
 4. **Outbound notification:** The reminder goes out as a Web Push notification to every device that enabled push. Respondr does not send a WhatsApp message.
 
