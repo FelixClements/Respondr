@@ -185,21 +185,8 @@ export function createAppServices(deps: AppDeps) {
       return getNotificationSettings();
     },
 
-    updateNotifications(body: Record<string, unknown>) {
-      const input: Record<string, unknown> = {};
-      if (body.ntfy_enabled !== undefined)
-        input.ntfy_enabled = body.ntfy_enabled === true || body.ntfy_enabled === '1';
-      if (body.ntfy_server !== undefined) input.ntfy_server = body.ntfy_server as string | undefined;
-      if (body.ntfy_topic !== undefined) input.ntfy_topic = body.ntfy_topic as string | undefined;
-      if (body.ntfy_priority !== undefined) input.ntfy_priority = body.ntfy_priority as number;
-      if (body.gotify_enabled !== undefined)
-        input.gotify_enabled = body.gotify_enabled === true || body.gotify_enabled === '1';
-      if (body.gotify_url !== undefined) input.gotify_url = body.gotify_url as string | undefined;
-      if (body.gotify_token !== undefined)
-        input.gotify_token = body.gotify_token as string | undefined;
-      if (body.gotify_priority !== undefined)
-        input.gotify_priority = body.gotify_priority as number;
-      return updateNotificationSettings(input);
+    updateNotifications(body: unknown) {
+      return updateNotificationSettings(body);
     },
 
     getHistory() {

@@ -34,11 +34,8 @@ describe('notification settings', () => {
 
   it('updates ntfy and gotify fields', () => {
     const updated = updateNotificationSettings({
-      ntfy_enabled: true,
-      ntfy_topic: 'alerts',
-      gotify_enabled: true,
-      gotify_url: 'https://gotify.example',
-      gotify_token: 'secret'
+      ntfy: { enabled: true, topic: 'alerts' },
+      gotify: { enabled: true, url: 'https://gotify.example', token: 'secret' }
     });
     expect(updated.ntfy.enabled).toBe(true);
     expect(updated.ntfy.topic).toBe('alerts');
@@ -48,7 +45,7 @@ describe('notification settings', () => {
   it('rejects a metadata Gotify URL', () => {
     expect(() =>
       updateNotificationSettings({
-        gotify_url: 'http://169.254.169.254/'
+        gotify: { url: 'http://169.254.169.254/' }
       })
     ).toThrow(/not allowed/);
   });
@@ -56,15 +53,14 @@ describe('notification settings', () => {
   it('rejects a non-http NTFY server', () => {
     expect(() =>
       updateNotificationSettings({
-        ntfy_server: 'gopher://ntfy.example'
+        ntfy: { server: 'gopher://ntfy.example' }
       })
     ).toThrow(/http/);
   });
 
   it('allows an empty Gotify URL', () => {
     const updated = updateNotificationSettings({
-      gotify_enabled: false,
-      gotify_url: ''
+      gotify: { enabled: false, url: '' }
     });
     expect(updated.gotify.url).toBe('');
   });
@@ -72,7 +68,7 @@ describe('notification settings', () => {
   it('rejects an invalid NTFY topic containing path traversal or illegal characters', () => {
     expect(() =>
       updateNotificationSettings({
-        ntfy_topic: '../invalid/topic'
+        ntfy: { topic: '../invalid/topic' }
       })
     ).toThrow(/letters, numbers/);
   });

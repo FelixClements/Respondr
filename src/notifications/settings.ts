@@ -63,48 +63,67 @@ export function getNotificationSettings(): NotificationSettingsDto {
   };
 }
 
-export function updateNotificationSettings(input: {
-  ntfy_enabled?: boolean;
-  ntfy_server?: string;
-  ntfy_topic?: string;
-  ntfy_priority?: number;
-  gotify_enabled?: boolean;
-  gotify_url?: string;
-  gotify_token?: string;
-  gotify_priority?: number;
-}): NotificationSettingsDto {
-  if (input.ntfy_enabled !== undefined) {
-    settingsDb.set('ntfy_enabled', input.ntfy_enabled ? '1' : '0');
+/** Same shape as NotificationSettingsDto; omitted sections and fields stay unchanged. */
+export interface NotificationSettingsUpdate {
+  ntfy?: Partial<Record<keyof NotificationSettingsDto['ntfy'], unknown>>;
+  gotify?: Partial<Record<keyof NotificationSettingsDto['gotify'], unknown>>;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function assertEnabledFlag(value: unknown, channel: string): boolean {
+  if (typeof value !== 'boolean') throw new Error(`${channel} enabled must be true or false`);
+  return value;
+}
+
+/**
+ * Validates every field first, then writes them in one transaction, so a bad
+ * field rejects the whole update instead of leaving it half-saved.
+ */
+export function updateNotificationSettings(update: unknown): NotificationSettingsDto {
+  if (!isPlainObject(update)) throw new Error('Invalid notification settings body');
+  const { ntfy = {}, gotify = {} } = update as NotificationSettingsUpdate;
+  if (!isPlainObject(ntfy) || !isPlainObject(gotify)) {
+    throw new Error('Invalid notification settings body');
   }
-  if (input.ntfy_server !== undefined) {
-    const server = String(input.ntfy_server).trim();
+
+  const writes: Array<[string, string]> = [];
+
+  if (ntfy.enabled !== undefined) {
+    writes.push(['ntfy_enabled', assertEnabledFlag(ntfy.enabled, 'NTFY') ? '1' : '0']);
+  }
+  if (ntfy.server !== undefined) {
+    const server = String(ntfy.server).trim();
     assertWebhookUrl(server);
-    settingsDb.set('ntfy_server', server);
+    writes.push(['ntfy_server', server]);
   }
-  if (input.ntfy_topic !== undefined) {
-    const topic = String(input.ntfy_topic).trim();
+  if (ntfy.topic !== undefined) {
+    const topic = String(ntfy.topic).trim();
     assertNtfyTopic(topic);
-    settingsDb.set('ntfy_topic', topic);
+    writes.push(['ntfy_topic', topic]);
   }
-  if (input.ntfy_priority !== undefined) {
-    settingsDb.set('ntfy_priority', String(clampNtfyPriority(input.ntfy_priority)));
+  if (ntfy.priority !== undefined) {
+    writes.push(['ntfy_priority', String(clampNtfyPriority(ntfy.priority))]);
   }
 
-  if (input.gotify_enabled !== undefined) {
-    settingsDb.set('gotify_enabled', input.gotify_enabled ? '1' : '0');
+  if (gotify.enabled !== undefined) {
+    writes.push(['gotify_enabled', assertEnabledFlag(gotify.enabled, 'Gotify') ? '1' : '0']);
   }
-  if (input.gotify_url !== undefined) {
-    const url = String(input.gotify_url).trim();
+  if (gotify.url !== undefined) {
+    const url = String(gotify.url).trim();
     assertWebhookUrl(url);
-    settingsDb.set('gotify_url', url);
+    writes.push(['gotify_url', url]);
   }
-  if (input.gotify_token !== undefined) {
-    settingsDb.set('gotify_token', String(input.gotify_token).trim());
+  if (gotify.token !== undefined) {
+    writes.push(['gotify_token', String(gotify.token).trim()]);
   }
-  if (input.gotify_priority !== undefined) {
-    settingsDb.set('gotify_priority', String(clampGotifyPriority(input.gotify_priority)));
+  if (gotify.priority !== undefined) {
+    writes.push(['gotify_priority', String(clampGotifyPriority(gotify.priority))]);
   }
 
+  settingsDb.setMany(writes);
   return getNotificationSettings();
 }
 
