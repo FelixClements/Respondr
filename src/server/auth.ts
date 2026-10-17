@@ -9,7 +9,7 @@ import { getAuthSecret, isProduction } from './secrets.js';
 const USERNAME_PATTERN = /^[a-zA-Z0-9_.]+$/;
 const MIN_USERNAME_LENGTH = 3;
 const MAX_USERNAME_LENGTH = 30;
-const MIN_PASSWORD_LENGTH = 8;
+export const MIN_PASSWORD_LENGTH = 8;
 
 const baseURL = process.env.BETTER_AUTH_URL || `http://localhost:${process.env.PORT || 9595}`;
 const localhostOrigin = `http://localhost:${process.env.PORT || 9595}`;
@@ -23,7 +23,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,
-    minPasswordLength: 8
+    minPasswordLength: MIN_PASSWORD_LENGTH
   },
   disabledPaths: ['/sign-up/email', '/is-username-available'],
   session: {
@@ -34,10 +34,7 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async () => {
-          const row = getDb().prepare('SELECT COUNT(*) as count FROM user').get() as {
-            count: number;
-          };
-          if (row.count >= 1) {
+          if (dbHasUsers()) {
             throw new Error('Account creation is disabled');
           }
         }
@@ -97,8 +94,7 @@ export async function ensureBootstrapUser(): Promise<void> {
   if (!envUser || !envPassword) return;
 
   try {
-    const row = getDb().prepare('SELECT COUNT(*) as count FROM user').get() as { count: number };
-    if (row.count > 0) return;
+    if (await hasUsers()) return;
 
     await createInitialUser(envUser, envPassword);
     logger.info(`Bootstrap user created from DASHBOARD_USER env: ${envUser}`);
@@ -110,8 +106,6 @@ export async function ensureBootstrapUser(): Promise<void> {
 }
 
 export async function hasUsers(): Promise<boolean> {
-  // Single source of truth lives in src/db/index.ts; keep this async wrapper
-  // for existing callers (routes, tests) so fail-closed semantics stay in sync.
   return dbHasUsers();
 }
 

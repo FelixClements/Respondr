@@ -51,12 +51,6 @@ export interface RawChat {
   lastMessage: ChatLastMessage | null;
 }
 
-export interface EnrichedChat extends RawChat {
-  hoursSince: number | null;
-  needsReply: boolean;
-  state: { state: string; until: number | null; createdAt: number } | null;
-}
-
 export interface ForgottenChat {
   id: string;
   name: string;

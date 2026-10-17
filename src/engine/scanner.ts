@@ -27,5 +27,3 @@ export async function scan(chatSource: ChatSource, now = Date.now()) {
 export async function run() {
   return scan(getAppDeps().chatSource);
 }
-
-export { hoursSince } from '../domain/reminderDiscovery.js';

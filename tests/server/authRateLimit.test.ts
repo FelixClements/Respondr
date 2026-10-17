@@ -6,6 +6,7 @@ vi.mock('../../src/server/auth.js', () => ({
   auth: { handler: (...args: unknown[]) => authHandler(...args) },
   ensureBootstrapUser: vi.fn(),
   runAuthMigrations: vi.fn(),
+  MIN_PASSWORD_LENGTH: 8,
   createInitialUser: vi.fn(),
   hasUsers: vi.fn()
 }));

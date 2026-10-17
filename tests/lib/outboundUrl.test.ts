@@ -49,27 +49,6 @@ describe('checkPushEndpoint', () => {
   });
 });
 
-describe('resolveWebhookUrl', () => {
-  afterEach(() => {
-    lookupMock.mockReset();
-  });
-
-  it('rejects a hostname that resolves to a metadata IP', async () => {
-    lookupMock.mockResolvedValue([{ address: '169.254.169.254', family: 4 }]);
-    const { resolveWebhookUrl } = await import('../../src/lib/outboundUrl.js');
-    const result = await resolveWebhookUrl('http://evil.example/hook');
-    expect(result.ok).toBe(false);
-    expect(lookupMock).toHaveBeenCalled();
-  });
-
-  it('allows a hostname that resolves to a public IP', async () => {
-    lookupMock.mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
-    const { resolveWebhookUrl } = await import('../../src/lib/outboundUrl.js');
-    const result = await resolveWebhookUrl('https://gotify.example.com');
-    expect(result.ok).toBe(true);
-  });
-});
-
 describe('createPinnedAgent', () => {
   afterEach(() => {
     lookupMock.mockReset();

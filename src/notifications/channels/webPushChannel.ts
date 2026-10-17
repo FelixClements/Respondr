@@ -20,10 +20,6 @@ export function initWebPush(): void {
   }
 }
 
-export function isWebPushConfigured(): boolean {
-  return isConfigured;
-}
-
 export function getVapidPublicKey(): string | null {
   return process.env.VAPID_PUBLIC_KEY || null;
 }

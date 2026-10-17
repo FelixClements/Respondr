@@ -22,10 +22,4 @@ export async function sendTest(title: string, body: string): Promise<DeliveryRep
   return dispatcher.dispatch(buildTestPayload(title, body));
 }
 
-/** @deprecated use sendReminder */
-export async function send(chat: ForgottenChat): Promise<void> {
-  return sendReminder(chat);
-}
-
-export { buildReminderPayload as formatMessage };
 export type { DeliveryReport };

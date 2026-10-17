@@ -3,12 +3,6 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT
 );
 
-CREATE TABLE IF NOT EXISTS ignored_chats (
-  id TEXT PRIMARY KEY,
-  name TEXT,
-  ignored_at INTEGER
-);
-
 CREATE TABLE IF NOT EXISTS chat_state (
   chat_id TEXT PRIMARY KEY,
   name TEXT,
@@ -16,9 +10,6 @@ CREATE TABLE IF NOT EXISTS chat_state (
   until INTEGER,
   created_at INTEGER
 );
-
-INSERT OR IGNORE INTO chat_state (chat_id, name, state, created_at)
-SELECT id, name, 'ignored', ignored_at FROM ignored_chats;
 
 CREATE TABLE IF NOT EXISTS reminders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,10 +34,6 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   created_at INTEGER
 );
 
--- Cross-process scan lock: one row per owner. runOnce deletes stale rows
--- (locked_at older than SCAN_LOCK_STALE_MS) then INSERTs; conflict = contention.
-CREATE TABLE IF NOT EXISTS scan_locks (
-  id TEXT PRIMARY KEY,
-  owner TEXT NOT NULL,
-  locked_at INTEGER NOT NULL
-);
+-- Tables from earlier versions that nothing reads any more.
+DROP TABLE IF EXISTS ignored_chats;
+DROP TABLE IF EXISTS scan_locks;

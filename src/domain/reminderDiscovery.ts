@@ -81,16 +81,6 @@ export function shouldScanDoneChat(
   return shouldResetDoneState(doneState, lastMessageAt, now);
 }
 
-/** @deprecated use shouldScanDoneChat + shouldResetDoneState (pure, no DB). */
-export function reconcileStaleDone(
-  _chatId: string,
-  lastMessageAt: number,
-  doneState: ChatWorkflowState | undefined,
-  now = Date.now()
-): boolean {
-  return shouldScanDoneChat(doneState, lastMessageAt, now);
-}
-
 export function discoverReminders(
   chats: RawChat[],
   thresholdHours: number,
