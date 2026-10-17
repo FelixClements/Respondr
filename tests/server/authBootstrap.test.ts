@@ -75,4 +75,22 @@ describe('createInitialUser', () => {
     );
     expect(await hasUsers()).toBe(false);
   });
+
+  it('removes the user again when linking the password fails, so setup can be retried', async () => {
+    const { createInitialUser, hasUsers, auth } = await import('../../src/server/auth.js');
+    const ctx = await auth.$context;
+    const linkSpy = vi
+      .spyOn(ctx.internalAdapter, 'linkAccount')
+      .mockRejectedValueOnce(new Error('disk full'));
+
+    await expect(createInitialUser('adminodin', 'password12345')).rejects.toThrow('disk full');
+    expect(await hasUsers()).toBe(false);
+
+    linkSpy.mockRestore();
+    await createInitialUser('adminodin', 'password12345');
+    const signedIn = await auth.api.signInUsername({
+      body: { username: 'adminodin', password: 'password12345' }
+    });
+    expect(signedIn?.user).toMatchObject({ username: 'adminodin' });
+  });
 });

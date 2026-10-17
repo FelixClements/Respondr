@@ -4,14 +4,16 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
+    // Spread options first so a caller's `headers` merges with, rather than
+    // replaces, the JSON content type.
     const res = await fetch(path, {
+      ...options,
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...(options.headers || {})
       },
-      signal: controller.signal,
-      ...options
+      signal: controller.signal
     });
 
     if (!res.ok) {

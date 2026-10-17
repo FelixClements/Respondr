@@ -77,13 +77,23 @@ export async function createInitialUser(username: string, password: string): Pro
   if (!createdUser) {
     throw new Error('Failed to create user');
   }
-  await ctx.internalAdapter.linkAccount({
-    userId: createdUser.id,
-    providerId: 'credential',
-    issuer: createLocalAccountIssuer('credential'),
-    accountId: createdUser.id,
-    password: hash
-  });
+  // Better Auth does not export its transaction helper, so undo by hand: a
+  // user left without a password would block /setup and bootstrap for good.
+  try {
+    await ctx.internalAdapter.linkAccount({
+      userId: createdUser.id,
+      providerId: 'credential',
+      issuer: createLocalAccountIssuer('credential'),
+      accountId: createdUser.id,
+      password: hash
+    });
+  } catch (err) {
+    await ctx.internalAdapter.deleteUser(createdUser.id).catch((cleanupErr: unknown) => {
+      const message = cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr);
+      logger.error(`Failed to remove half-created user ${createdUser.id}: ${message}`);
+    });
+    throw err;
+  }
 }
 
 export type Session = typeof auth.$Infer.Session;

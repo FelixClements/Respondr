@@ -20,6 +20,10 @@ export function isPushEnvironmentSupported(): boolean {
   return true;
 }
 
+/**
+ * Fails closed: if the server cannot confirm the subscription, report it as
+ * missing so the user can re-enable push (subscribing again is idempotent).
+ */
 async function isEndpointSubscribedOnServer(endpoint: string): Promise<boolean> {
   try {
     const res = await fetch('/api/push/status', {
@@ -28,11 +32,11 @@ async function isEndpointSubscribedOnServer(endpoint: string): Promise<boolean> 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ endpoint })
     });
-    if (!res.ok) return true;
+    if (!res.ok) return false;
     const data = (await res.json()) as { subscribed?: boolean };
-    return data.subscribed !== false;
+    return data.subscribed === true;
   } catch {
-    return true;
+    return false;
   }
 }
 
