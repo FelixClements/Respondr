@@ -14,10 +14,13 @@ services:
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - DASHBOARD_USER=${DASHBOARD_USER:-}
       - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD:-}
-      - NODE_ENV=${NODE_ENV:-production}
+      # Always production in Docker: a NODE_ENV in .env must not disable the
+      # startup secret/HTTPS checks. Use `npm run dev` for development.
+      - NODE_ENV=production
       - HOST=${HOST:-0.0.0.0}
-      - TRUST_PROXY=${TRUST_PROXY:-true}
-      - CHAT_LIMIT=${CHAT_LIMIT:-}
+      # Off unless set: with it on, anyone reaching port 9595 directly can spoof
+      # X-Forwarded-For and dodge the sign-in rate limit.
+      - TRUST_PROXY=${TRUST_PROXY:-}
       - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
       - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
       - VAPID_SUBJECT=${VAPID_SUBJECT:-}

@@ -27,7 +27,7 @@ Assume attackers can reach your HTTP port. Assume they will probe `/api/auth-sta
 | Rate limits | `POST /api/setup`: 5 / 15 min / IP; `POST /api/auth/sign-in*`: 10 / 15 min / IP; `GET /api/auth-status`: 30 / min / IP (requires `TRUST_PROXY=true` behind a reverse proxy to trust `X-Forwarded-For`) |
 | Web Push endpoints | HTTPS only, hostname must be a known push provider (FCM, Mozilla, Apple, WNS) |
 | Security headers | `secureHeaders()` on all responses (nosniff, DENY framing, referrer policy, permissions policy) |
-| Docker defaults | `docker-compose.yml` sets `NODE_ENV=production` and requires `.env` (no placeholder secrets) |
+| Docker defaults | `docker-compose.yml` always sets `NODE_ENV=production` (not overridable from `.env`) and leaves `TRUST_PROXY` off unless you set it |
 
 ## Remaining operator responsibilities
 
