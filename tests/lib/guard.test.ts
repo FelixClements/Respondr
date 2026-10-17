@@ -6,9 +6,7 @@ describe('guard', () => {
     const guard = createGuard();
     expect(guard.tryAcquire()).toBe(true);
     expect(guard.tryAcquire()).toBe(false);
-    expect(guard.isHeld()).toBe(true);
     guard.release();
-    expect(guard.isHeld()).toBe(false);
     expect(guard.tryAcquire()).toBe(true);
   });
 
@@ -16,7 +14,7 @@ describe('guard', () => {
     const guard = createGuard();
     expect(guard.tryAcquire()).toBe(true);
     guard.resetForTests();
-    expect(guard.isHeld()).toBe(false);
+    expect(guard.tryAcquire()).toBe(true);
   });
 
   it('expires stuck locks after timeout', () => {
@@ -24,7 +22,6 @@ describe('guard', () => {
     expect(guard.tryAcquire()).toBe(true);
     return new Promise<void>((resolve) => {
       setTimeout(() => {
-        expect(guard.isHeld()).toBe(false);
         expect(guard.tryAcquire()).toBe(true);
         resolve();
       }, 25);

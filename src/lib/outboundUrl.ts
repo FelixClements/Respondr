@@ -154,31 +154,6 @@ export function checkPushKeys(
   return { ok: true };
 }
 
-export async function resolveWebhookUrl(raw: string): Promise<UrlCheck> {
-  const parsed = parseHttpUrl(raw);
-  if (!parsed.ok) return parsed;
-  if (!parsed.href || !parsed.url) return ok('');
-
-  const hostname = stripIpv6Brackets(parsed.url.hostname);
-  if (isIP(hostname)) {
-    if (isBlockedAddress(hostname)) return fail('URL host is not allowed');
-    return ok(parsed.href);
-  }
-
-  try {
-    const records = await lookup(hostname, { all: true });
-    const addresses = Array.isArray(records) ? records : [records];
-    for (const record of addresses) {
-      if (isBlockedAddress(record.address)) {
-        return fail('URL host is not allowed');
-      }
-    }
-    return ok(parsed.href);
-  } catch {
-    return fail('URL host could not be resolved');
-  }
-}
-
 export async function createPinnedAgent(raw: string): Promise<PinnedAgentResult> {
   const parsed = parseHttpUrl(raw);
   if (!parsed.ok) return parsed;
@@ -216,8 +191,8 @@ export async function createPinnedAgent(raw: string): Promise<PinnedAgentResult>
   }
 
   // checkWebhookUrl is parse + hostname-block only (no DNS). Actual sends go
-  // through createPinnedAgent/resolveWebhookUrl which resolve all A/AAAA and
-  // reject blocked addresses, then pin the IP via a custom lookup. Save-time
+  // through createPinnedAgent, which resolves all A/AAAA records, rejects
+  // blocked addresses, then pins the IP via a custom lookup. Save-time
   // checks are fail-fast UX; send-time resolution is the SSRF enforcement
   // point (TOCTOU split is intentional: DNS is re-resolved at send).
   const customLookup: LookupFunction = (

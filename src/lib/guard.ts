@@ -1,12 +1,10 @@
 /**
- * Single-flight in-process guard shared by scan/reconnect/manual-run paths.
- * Collapses the three bespoke booleans into one tested abstraction with
- * timeout (stuck-lock safety) and a test reset hook.
+ * Single-flight in-process guard for the scan and reconnect paths, with a
+ * timeout so a stuck holder cannot block forever.
  */
 export interface Guard {
   tryAcquire(): boolean;
   release(): void;
-  isHeld(): boolean;
   resetForTests(): void;
 }
 
@@ -28,14 +26,6 @@ export function createGuard(timeoutMs = 10 * 60 * 1000): Guard {
     },
     release(): void {
       heldAt = null;
-    },
-    isHeld(): boolean {
-      if (heldAt === null) return false;
-      if (isStale(Date.now())) {
-        heldAt = null;
-        return false;
-      }
-      return true;
     },
     resetForTests(): void {
       heldAt = null;

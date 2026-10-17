@@ -58,6 +58,22 @@ describe('runOnce keepalive', () => {
     expect(calls).toEqual(['keepAlive', 'scrape']);
   });
 
+  it('reports a concurrent run as busy and frees the guard afterwards', async () => {
+    let finishKeepAlive = () => {};
+    keepAliveImpl = () => new Promise<void>((resolve) => (finishKeepAlive = resolve));
+    const { runOnce, SCAN_BUSY_ERROR } = await import('../../src/engine/runner.js');
+
+    const first = runOnce();
+    const second = await runOnce();
+    expect(second).toMatchObject({ busy: true, error: SCAN_BUSY_ERROR });
+
+    finishKeepAlive();
+    expect((await first).error).toBeNull();
+
+    keepAliveImpl = async () => {};
+    expect((await runOnce()).error).toBeNull();
+  });
+
   it('does not scrape when keepalive restarts a stale session', async () => {
     keepAliveImpl = async () => {
       calls.push('keepAlive');

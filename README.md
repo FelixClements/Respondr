@@ -292,6 +292,7 @@ The dashboard was rebuilt as a SvelteKit SPA with Better Auth. After upgrading:
 3. Re-create your account via `/setup` or set `DASHBOARD_USER` / `DASHBOARD_PASSWORD` for auto-bootstrap.
 4. Passwords must be at least 8 characters (was 6 in earlier versions).
 5. You will need to log in again (session cookies changed).
+6. Chats you ignored before 0.2.0 are not carried over; ignore them again from the Chats tab.
 
 ---
 

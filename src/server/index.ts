@@ -5,7 +5,14 @@ import { secureHeaders } from 'hono/secure-headers';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as logger from '../lib/logger.js';
-import { auth, ensureBootstrapUser, createInitialUser, runAuthMigrations } from './auth.js';
+import {
+  auth,
+  ensureBootstrapUser,
+  createInitialUser,
+  hasUsers,
+  runAuthMigrations,
+  MIN_PASSWORD_LENGTH
+} from './auth.js';
 import { buildApiApp } from './api.js';
 import { requireAuth } from './middleware.js';
 import type { AppVariables } from './middleware.js';
@@ -20,7 +27,6 @@ import { isHttpSetupAllowed, requiresSetupToken } from './secrets.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_BUILD = path.join(__dirname, '../../web/build');
-const MIN_PASSWORD_LENGTH = 8;
 
 export function createApp() {
   const app = new Hono<{ Variables: AppVariables }>();
@@ -93,7 +99,6 @@ export function createApp() {
       );
     }
 
-    const { hasUsers } = await import('./auth.js');
     try {
       if (await hasUsers()) {
         return c.json({ error: 'Already configured' }, 403);
@@ -138,7 +143,6 @@ export function createApp() {
       });
     }
 
-    const { hasUsers } = await import('./auth.js');
     try {
       return c.json({
         hasUsers: await hasUsers(),

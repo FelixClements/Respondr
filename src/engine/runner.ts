@@ -1,7 +1,6 @@
 import * as scanner from './scanner.js';
 import * as notifications from '../notifications/index.js';
 import * as historyDb from '../db/history.js';
-import { releaseScanLock, resetScanLockForTests, tryAcquireScanLock } from '../db/scanLock.js';
 import { getAppDeps } from '../whatsapp/create.js';
 import { createGuard } from '../lib/guard.js';
 import * as logger from '../lib/logger.js';
@@ -11,7 +10,6 @@ export const SCAN_BUSY_ERROR = 'Scan already in progress';
 
 export function resetScanForTests(): void {
   scanGuard.resetForTests();
-  resetScanLockForTests();
 }
 
 export async function runOnce() {
@@ -19,23 +17,6 @@ export async function runOnce() {
   if (!scanGuard.tryAcquire()) {
     logger.warn('Scan already in progress, skipping concurrent run');
     return { runAt, totalChecked: 0, remindersSent: 0, error: SCAN_BUSY_ERROR, busy: true as const };
-  }
-
-  let dbLockHeld = false;
-  try {
-    if (!tryAcquireScanLock(runAt)) {
-      return {
-        runAt,
-        totalChecked: 0,
-        remindersSent: 0,
-        error: SCAN_BUSY_ERROR,
-        busy: true as const
-      };
-    }
-    dbLockHeld = true;
-  } catch {
-    // tryAcquireScanLock already logs and fails open; continue
-    dbLockHeld = false;
   }
 
   let totalChecked = 0;
@@ -57,7 +38,7 @@ export async function runOnce() {
     logger.debug(`runOnce found ${forgotten.length} forgotten chats out of ${checked} checked`);
 
     for (const chat of forgotten) {
-      await notifications.send(chat);
+      await notifications.sendReminder(chat);
       historyDb.logReminder(chat.id, chat.name, runAt);
       remindersSent++;
     }
@@ -69,7 +50,6 @@ export async function runOnce() {
     error = message;
   } finally {
     scanGuard.release();
-    if (dbLockHeld) releaseScanLock();
   }
 
   historyDb.logScan(runAt, totalChecked, remindersSent, error);

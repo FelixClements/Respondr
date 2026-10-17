@@ -21,63 +21,9 @@ export function remove(chatId: string): void {
   db.prepare('DELETE FROM chat_state WHERE chat_id = ?').run(chatId);
 }
 
-export function get(chatId: string): ChatStateRow | null {
-  const db = getDb();
-  const row = db
-    .prepare('SELECT chat_id AS id, name, state, until, created_at FROM chat_state WHERE chat_id = ?')
-    .get(chatId) as ChatStateRow | undefined;
-  return row || null;
-}
-
-export function isIgnored(chatId: string): boolean {
-  const row = get(chatId);
-  return !!row && row.state === 'ignored';
-}
-
-export function isDone(chatId: string): boolean {
-  const row = get(chatId);
-  return !!row && row.state === 'done';
-}
-
 export function list(): ChatStateRow[] {
   const db = getDb();
   return db
     .prepare('SELECT chat_id AS id, name, state, until, created_at FROM chat_state ORDER BY created_at DESC')
     .all() as ChatStateRow[];
-}
-
-export function listByState(state: string): ChatStateRow[] {
-  const db = getDb();
-  return db
-    .prepare(
-      'SELECT chat_id AS id, name, state, until, created_at FROM chat_state WHERE state = ? ORDER BY created_at DESC'
-    )
-    .all(state) as ChatStateRow[];
-}
-
-export function getStateById(): Record<string, string> {
-  const rows = list();
-  const map: Record<string, string> = {};
-  for (const row of rows) {
-    map[row.id] = row.state;
-  }
-  return map;
-}
-
-export function resetDoneIfNewMessage(chatId: string, lastMessageAt: number): boolean {
-  const row = get(chatId);
-  if (!row || row.state !== 'done') return false;
-
-  const now = Date.now();
-  if (row.until && now > row.until) {
-    remove(chatId);
-    return true;
-  }
-
-  if (lastMessageAt && lastMessageAt > row.created_at) {
-    remove(chatId);
-    return true;
-  }
-
-  return false;
 }

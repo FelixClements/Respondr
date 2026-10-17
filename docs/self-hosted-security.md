@@ -41,7 +41,7 @@ Assume attackers can reach your HTTP port. Assume they will probe `/api/auth-sta
 | Container hardening | Entrypoint starts as root to `chown` bind-mounted `$DATA_DIR`/`$AUTH_DIR` to `node:node`, then drops to the unprivileged `node` user via `setpriv`/`gosu`/`su`. Chromium uses `--no-sandbox` (typical in Docker). If you bind-mount host dirs, `chown -R 1000:1000` them or set `user: "1000:1000"` in compose. |
 | Dependency CVEs | Keep images patched; `whatsapp-web.js`/puppeteer chain has upstream advisories |
 | Migrations | `prepareApp()` runs Better Auth migrations at boot with WAL + `busy_timeout=5000`. `npm run auth:migrate` is host/dev-only (requires devDependencies `tsx`, absent from the `omit=dev` runtime image) and is a no-op on import. |
-| Replica count | Run exactly 1 replica. Scan locks are DB-backed, but scheduler/rate-limit guards are per-process; 2 replicas sharing one DB can double-send. |
+| Replica count | Run exactly 1 replica. The scan guard, scheduler, and rate limits are all in-process; 2 replicas sharing one DB will double-send. |
 
 ## First-boot setup options
 

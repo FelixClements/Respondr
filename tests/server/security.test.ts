@@ -1,10 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  KNOWN_PLACEHOLDER_SECRETS,
-  createRateLimiter,
-  validateProductionConfig,
-  verifySetupToken
-} from '../../src/server/security.js';
+import { KNOWN_PLACEHOLDER_SECRETS, validateProductionConfig } from '../../src/server/secrets.js';
+import { createRateLimiter } from '../../src/server/rateLimit.js';
+import { verifySetupToken } from '../../src/server/setupToken.js';
 
 const originalEnv = { ...process.env };
 
@@ -107,7 +104,7 @@ describe('createRateLimiter', () => {
 describe('extractClientIp', () => {
   it('ignores X-Forwarded-For and falls back to socket or loopback when TRUST_PROXY is not enabled', async () => {
     delete process.env.TRUST_PROXY;
-    const { extractClientIp } = await import('../../src/server/security.js');
+    const { extractClientIp } = await import('../../src/server/clientIp.js');
     const fakeContext = {
       req: {
         header: (name: string) =>
@@ -133,7 +130,7 @@ describe('extractClientIp', () => {
 
   it('uses rightmost valid X-Forwarded-For when TRUST_PROXY is true', async () => {
     process.env.TRUST_PROXY = 'true';
-    const { extractClientIp } = await import('../../src/server/security.js');
+    const { extractClientIp } = await import('../../src/server/clientIp.js');
     const fakeContext = {
       req: {
         header: (name: string) =>
@@ -145,7 +142,7 @@ describe('extractClientIp', () => {
 
   it('ignores spoofed leftmost entries and garbage, falls back to X-Real-IP only when valid', async () => {
     process.env.TRUST_PROXY = 'true';
-    const { extractClientIp } = await import('../../src/server/security.js');
+    const { extractClientIp } = await import('../../src/server/clientIp.js');
     const withBoth = {
       req: {
         header: (name: string) => {
@@ -185,7 +182,7 @@ describe('getBindHostname and HTTP setup', () => {
     process.env.NODE_ENV = 'development';
     delete process.env.HOST;
     const { getBindHostname, isLoopbackBind, isHttpSetupAllowed } = await import(
-      '../../src/server/security.js'
+      '../../src/server/secrets.js'
     );
     expect(getBindHostname()).toBe('127.0.0.1');
     expect(isLoopbackBind()).toBe(true);
@@ -197,7 +194,7 @@ describe('getBindHostname and HTTP setup', () => {
     process.env.HOST = '0.0.0.0';
     delete process.env.SETUP_TOKEN;
     vi.resetModules();
-    const { getBindHostname, isHttpSetupAllowed } = await import('../../src/server/security.js');
+    const { getBindHostname, isHttpSetupAllowed } = await import('../../src/server/secrets.js');
     expect(getBindHostname()).toBe('0.0.0.0');
     expect(isHttpSetupAllowed()).toBe(false);
   });
@@ -207,7 +204,7 @@ describe('getBindHostname and HTTP setup', () => {
     process.env.HOST = '0.0.0.0';
     process.env.SETUP_TOKEN = 'setup-secret';
     vi.resetModules();
-    const { isHttpSetupAllowed } = await import('../../src/server/security.js');
+    const { isHttpSetupAllowed } = await import('../../src/server/secrets.js');
     expect(isHttpSetupAllowed()).toBe(true);
   });
 });
