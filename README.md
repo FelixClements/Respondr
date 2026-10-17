@@ -27,6 +27,7 @@ These shots use sample conversations so the layout is visible without a live Wha
 * **Narrow scan:** Skips groups, WhatsApp-archived threads, and muted chats. Only the most recent chats are checked, on a spaced interval.
 * **Rules you can change in the app:** Scan interval (1–59 minutes), chat limit (1–200), and threshold (1–168 hours). Defaults are 30 minutes, 50 chats, and 3 hours. Saving them reschedules the scanner.
 * **Link stay-alive:** Each scan sends a presence update so WhatsApp keeps the linked device active, and restarts the browser session if the connection has gone stale.
+* **Auto-reconnect:** If WhatsApp disconnects or Chromium fails to start, Respondr restarts the session after 2, 5, 15, 30, then every 60 minutes until it is back. **Reconnect** on the Updates tab retries right away. After a logout from the phone it waits for you to scan a new QR code instead. The QR page refreshes itself.
 * **Chat actions:** Swipe right to mark a chat done (quiet until a newer message arrives). Swipe left to ignore it, which moves it to Archived inside Respondr. Swipe an archived chat to restore it.
 * **Updates tab:** Connection status, how many chats need a reply, a snoozed count (done + ignored), the next scan time, recent reminders, and **Scan now**.
 * **Notifications:** Web Push to the installed PWA. Turn it on in **Settings → Notifications** and send a test from there.

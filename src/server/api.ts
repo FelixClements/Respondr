@@ -58,13 +58,7 @@ export function buildApiApp() {
     return c.json(result);
   });
 
-  app.post('/reconnect', async (c) => {
-    const result = await services.reconnect();
-    if (!result.ok && 'busy' in result && result.busy) {
-      return c.json(result, 409);
-    }
-    return c.json(result, result.ok ? 200 : 500);
-  });
+  app.post('/reconnect', (c) => c.json(services.reconnect(), 202));
 
   app.post('/push/subscribe', async (c) => {
     const result = services.subscribePush(await c.req.json().catch(() => ({})));

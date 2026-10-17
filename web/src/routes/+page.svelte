@@ -6,13 +6,24 @@
   import MdFab from '$lib/components/md/MdFab.svelte';
   import { pageSubtitleClass, sectionLabelClass } from '$lib/uiSpacing';
   import { api } from '$lib/api';
-  import { formatDateTime, formatNextScan, statusLabel, statusColor } from '$lib/status';
+  import {
+    canReconnect,
+    fetchWhatsAppStatus,
+    formatDateTime,
+    formatNextScan,
+    requestReconnect,
+    statusLabel,
+    statusColor,
+    STATUS_POLL_MS,
+    type WhatsAppStatus
+  } from '$lib/status';
 
   let loading = $state(true);
   let scanning = $state(false);
+  let reconnecting = $state(false);
   let notice = $state<{ text: string; isError: boolean } | null>(null);
   let dashboard = $state<{
-    status: { status: string; isReady: boolean };
+    status: WhatsAppStatus;
     stats: { total: number | null; urgent: number | null; snoozed: number };
     recentReminders: Array<{ chat_name: string; sent_at: number }>;
     lastScan: { run_at: number; chats_checked: number; reminders_sent: number } | null;
@@ -53,6 +64,37 @@
       scanning = false;
     }
   }
+
+  async function reconnect() {
+    if (reconnecting) return;
+    reconnecting = true;
+    notice = null;
+    try {
+      await requestReconnect();
+      notice = { text: 'Reconnecting…', isError: false };
+    } catch (err) {
+      notice = { text: err instanceof Error ? err.message : 'Reconnect failed', isError: true };
+    } finally {
+      reconnecting = false;
+    }
+  }
+
+  // While WhatsApp is not connected, follow its status; reload once it connects.
+  $effect(() => {
+    if (!dashboard || dashboard.status.isReady) return;
+    const timer = setInterval(async () => {
+      try {
+        const status = await fetchWhatsAppStatus();
+        if (status.isReady) {
+          notice = null;
+          await load();
+        } else if (dashboard) dashboard.status = status;
+      } catch {
+        /* keep polling; the next tick retries */
+      }
+    }, STATUS_POLL_MS);
+    return () => clearInterval(timer);
+  });
 
   function refresh() {
     notice = null;
@@ -103,8 +145,17 @@
           <div class="font-medium text-lg {statusColor(dashboard.status.status)}">
             {statusLabel(dashboard.status.status)}
           </div>
+          {#if dashboard.status.reconnectAt}
+            <div class="text-xs text-md-light-on-surface-variant dark:text-md-dark-on-surface-variant">
+              Auto-retry at {formatNextScan(new Date(dashboard.status.reconnectAt))}
+            </div>
+          {/if}
         </div>
-        {#if !dashboard.status.isReady}
+        {#if canReconnect(dashboard.status)}
+          <Link onClick={reconnect} class={reconnecting ? 'opacity-50 pointer-events-none' : ''}>
+            Reconnect
+          </Link>
+        {:else if !dashboard.status.isReady}
           <Link onClick={() => goto('/settings/link')}>Link</Link>
         {/if}
       </div>

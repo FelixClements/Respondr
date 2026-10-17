@@ -6,6 +6,7 @@ import * as logger from '../lib/logger.js';
 import type { RawChat, WhatsAppHealth, WhatsAppStatus } from '../types.js';
 import { scrapeRecentChatsInBrowser } from './scrape/recentChats.js';
 import { performKeepAlive } from './keepAlive.js';
+import { createAutoReconnect } from './autoReconnect.js';
 
 const { Client, LocalAuth } = wweb;
 
@@ -81,8 +82,17 @@ const client = new Client({
   }
 });
 
+// Restart a dropped session with long backoff. Not after LOGOUT or while a QR
+// is showing: those need the user to scan, and a restart cannot help.
+function needsRestart(): boolean {
+  return !isReady && status !== 'awaiting_qr';
+}
+
+const autoReconnect = createAutoReconnect({ restart: () => restartClient(), needsRestart });
+
 client.on('qr', async (qr: string) => {
   status = 'awaiting_qr';
+  autoReconnect.reset();
   logger.info('WhatsApp QR code received.');
   try {
     qrDataUrl = await QRCode.toDataURL(qr);
@@ -107,6 +117,7 @@ client.on('ready', () => {
   status = 'ready';
   qrDataUrl = null;
   lastDisconnectReason = null;
+  autoReconnect.reset();
   logger.info('WhatsApp client is ready.');
 });
 
@@ -115,6 +126,10 @@ client.on('disconnected', (reason: string) => {
   status = 'disconnected';
   lastDisconnectReason = reason;
   logger.warn('WhatsApp client disconnected:', reason);
+  // On LOGOUT whatsapp-web.js reloads to a fresh QR by itself. Any other
+  // reason leaves the browser closed until something restarts it.
+  if (reason === 'LOGOUT') autoReconnect.reset();
+  else autoReconnect.schedule();
 });
 
 client.on('loading_screen', (percent: number, message: string) => {
@@ -129,6 +144,7 @@ client.on('change_battery', (batteryInfo: unknown) => {
   logger.debug(`WhatsApp battery info: ${JSON.stringify(batteryInfo)}`);
 });
 
+/** Launches the browser; on failure queues an automatic retry and rethrows. */
 export async function startClient(): Promise<void> {
   logger.info('Initializing WhatsApp client...');
   clearProfileLocks();
@@ -142,6 +158,7 @@ export async function startClient(): Promise<void> {
     launchError = err instanceof Error ? err.message : String(err);
     status = 'puppeteer_error';
     logger.error('Failed to initialize WhatsApp client:', err);
+    autoReconnect.schedule();
     throw err;
   }
 }
@@ -156,13 +173,33 @@ export async function stopClient(): Promise<void> {
   }
 }
 
-export async function restartClient(): Promise<void> {
-  logger.info('Restarting WhatsApp client...');
-  await stopClient();
-  launchError = null;
-  status = 'initializing';
-  isReady = false;
-  return startClient();
+let restartInFlight: Promise<void> | null = null;
+
+/**
+ * Single-flight: the scan keep-alive, the Reconnect button, and auto-reconnect
+ * all share one restart instead of tearing down each other's browser.
+ */
+export function restartClient(): Promise<void> {
+  restartInFlight ??= (async () => {
+    logger.info('Restarting WhatsApp client...');
+    await stopClient();
+    launchError = null;
+    status = 'initializing';
+    isReady = false;
+    await startClient();
+    // initialize() returns once the page loads, before `ready` or a QR. Keep a
+    // retry queued in case neither arrives; their handlers cancel it.
+    if (needsRestart()) autoReconnect.schedule();
+  })().finally(() => {
+    restartInFlight = null;
+  });
+  return restartInFlight;
+}
+
+/** Manual reconnect: start the backoff over and restart now. */
+export async function reconnect(): Promise<void> {
+  autoReconnect.reset();
+  await restartClient();
 }
 
 export async function keepAlive(): Promise<void> {
@@ -179,7 +216,7 @@ export function getQrDataUrl(): string | null {
 }
 
 export function getStatus(): WhatsAppStatus {
-  return { status, isReady };
+  return { status, isReady, reconnectAt: autoReconnect.nextAttemptAt() };
 }
 
 export function getHealth(): WhatsAppHealth {

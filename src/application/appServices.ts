@@ -9,13 +9,10 @@ import { buildTestPayload } from '../notifications/reminderContent.js';
 import { checkPushEndpoint, checkPushKeys } from '../lib/pushValidation.js';
 import * as scheduler from '../scheduler.js';
 import * as logger from '../lib/logger.js';
-import { createGuard } from '../lib/guard.js';
 import type { AppDeps } from '../whatsapp/create.js';
 
 import { CORE_SETTING_KEYS } from '../db/settings.js';
 import type { SettingsMap } from '../types.js';
-
-export const RECONNECT_BUSY_ERROR = 'Reconnection already in progress';
 
 export function filterCoreSettings(all: SettingsMap): SettingsMap {
   const result = {} as SettingsMap;
@@ -39,7 +36,6 @@ function workflowMap() {
 
 export function createAppServices(deps: AppDeps) {
   const { chatSource, whatsapp } = deps;
-  const reconnectGuard = createGuard();
 
   return {
     getStatusPayload() {
@@ -59,6 +55,7 @@ export function createAppServices(deps: AppDeps) {
       return {
         status: status.status,
         isReady: status.isReady,
+        reconnectAt: status.reconnectAt,
         health,
         nextScan: scheduler.getNextRunAt(),
         settings: filterCoreSettings(settingsDb.getAll())
@@ -193,26 +190,18 @@ export function createAppServices(deps: AppDeps) {
 
     runScan: runOnce,
 
-    async reconnect() {
-      if (!reconnectGuard.tryAcquire()) {
-        return {
-          ok: false as const,
-          busy: true as const,
-          error: RECONNECT_BUSY_ERROR,
-          status: whatsapp.getStatus()
-        };
-      }
+    /**
+     * Starts a restart and returns at once: launching Chromium and loading
+     * WhatsApp Web can outlast an HTTP request. Clients poll status for the
+     * outcome; a failed launch shows as `puppeteer_error` and queues a retry.
+     */
+    reconnect() {
       logger.info('Reconnect requested from dashboard');
-      try {
-        await whatsapp.restartClient();
-        return { ok: true as const, status: whatsapp.getStatus() };
-      } catch (err) {
+      whatsapp.reconnect().catch((err: unknown) => {
         const message = err instanceof Error ? err.message : String(err);
         logger.error(`Reconnect failed: ${message}`);
-        return { ok: false as const, error: message, status: whatsapp.getStatus() };
-      } finally {
-        reconnectGuard.release();
-      }
+      });
+      return { ok: true as const };
     },
 
     subscribePush(sub: { endpoint?: string; keys?: { p256dh?: string; auth?: string } }) {
