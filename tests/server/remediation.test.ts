@@ -10,17 +10,7 @@ import {
   hasPushSubscription
 } from '../../src/db/pushSubscriptions.js';
 import { createAppServices } from '../../src/application/appServices.js';
-import { checkPushKeys } from '../../src/lib/outboundUrl.js';
-import {
-  assertNtfyTopic,
-  clampGotifyPriority,
-  clampNtfyPriority,
-  NTFY_TOPIC_PATTERN
-} from '../../src/notifications/ntfyTopic.js';
-import {
-  seedNotificationSettingsFromEnv,
-  getNotificationSettings
-} from '../../src/notifications/settings.js';
+import { checkPushKeys } from '../../src/lib/pushValidation.js';
 import { resetScanForTests, SCAN_BUSY_ERROR } from '../../src/engine/runner.js';
 import { isValidIp } from '../../src/server/clientIp.js';
 import { isLogLevel } from '../../src/lib/logger.js';
@@ -59,12 +49,6 @@ describe('remediation', () => {
     closeDb();
     if (dbPath && fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
     delete process.env.DB_PATH;
-    delete process.env.NTFY_TOPIC;
-    delete process.env.NTFY_SERVER;
-    delete process.env.NTFY_PRIORITY;
-    delete process.env.GOTIFY_URL;
-    delete process.env.GOTIFY_TOKEN;
-    delete process.env.GOTIFY_PRIORITY;
   });
 
   it('clamps core settings and rejects malformed bodies', () => {
@@ -93,23 +77,6 @@ describe('remediation', () => {
     expect(() => services.updateLogLevel('verbose')).toThrow(/Invalid log level/);
     expect(isLogLevel('debug')).toBe(true);
     expect(isLogLevel('verbose')).toBe(false);
-  });
-
-  it('ntfy topic pattern allows tildes and rejects traversal', () => {
-    expect(NTFY_TOPIC_PATTERN.test('alerts~v2')).toBe(true);
-    expect(() => assertNtfyTopic('../evil')).toThrow(/tildes/);
-    expect(() => clampNtfyPriority('NaN')).toThrow();
-    expect(() => clampNtfyPriority(9)).toThrow(/1 and 5/);
-    expect(() => clampGotifyPriority(11)).toThrow(/0 and 10/);
-    expect(clampNtfyPriority(3)).toBe(3);
-  });
-
-  it('seed rejects invalid env topics fail-closed', () => {
-    process.env.NTFY_TOPIC = '../evil';
-    seedNotificationSettingsFromEnv();
-    const settings = getNotificationSettings();
-    expect(settings.ntfy.topic).toBe('');
-    expect(settings.ntfy.enabled).toBe(false);
   });
 
   it('push prune is deterministic on created_at ties (id DESC)', () => {

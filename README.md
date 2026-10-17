@@ -15,7 +15,6 @@ These shots use sample conversations so the layout is visible without a live Wha
   <img src="docs/screenshots/settings.png" alt="Settings for scan rules, notifications, WhatsApp linking, and history" width="200">
 </p>
 <p align="center">
-  <img src="docs/screenshots/notifications.png" alt="Notification settings for NTFY, Gotify, and Web Push" width="200">
   <img src="docs/screenshots/qr.png" alt="Link device screen asking you to scan the WhatsApp QR code" width="200">
 </p>
 
@@ -30,7 +29,7 @@ These shots use sample conversations so the layout is visible without a live Wha
 * **Link stay-alive:** Each scan sends a presence update so WhatsApp keeps the linked device active, and restarts the browser session if the connection has gone stale.
 * **Chat actions:** Swipe right to mark a chat done (quiet until a newer message arrives). Swipe left to ignore it, which moves it to Archived inside Respondr. Swipe an archived chat to restore it.
 * **Updates tab:** Connection status, how many chats need a reply, a snoozed count (done + ignored), the next scan time, recent reminders, and **Scan now**.
-* **Notifications:** NTFY, Gotify, and Web Push. Turn them on in Settings and send a test from the notifications screen.
+* **Notifications:** Web Push to the installed PWA. Turn it on in **Settings → Notifications** and send a test from there.
 * **Installable PWA:** Add it to your home screen for Web Push. On iOS, push requires iOS 16.4+ and the app opened from the home screen, not Safari.
 * **One admin:** Better Auth with public sign-up disabled. Create the account with `DASHBOARD_USER` / `DASHBOARD_PASSWORD`, or finish `/setup`.
 * **Session persistence:** The WhatsApp session is stored locally, so you scan the QR code once.
@@ -57,13 +56,13 @@ These shots use sample conversations so the layout is visible without a live Wha
                 ├──► Marked done or ignored? ────► [ SKIP CHAT ]
                 └──► From the contact, older than the threshold
                              │
-                             └──► [ NTFY / Gotify / Web Push ]
+                             └──► [ Web Push ]
 ```
 
 1. **Authentication:** The server starts a headless Chromium instance. On a computer, open **Settings → QR Code** (or `/qr`) and scan it from WhatsApp → Linked devices → Link a device. On a phone, **Settings → Link WhatsApp** lists those same steps.
 2. **Analysis loop:** A cron scheduler sweeps the most recent chats. Each run also pings the session so the link stays up.
 3. **Logic assessment:** If the contact sent the last message, you have not reacted to it, the chat is not done or ignored, and the message is older than the threshold, Respondr queues a reminder.
-4. **Outbound notification:** The reminder goes out through whichever of NTFY, Gotify, and Web Push you enabled. Respondr does not send a WhatsApp message.
+4. **Outbound notification:** The reminder goes out as a Web Push notification to every device that enabled push. Respondr does not send a WhatsApp message.
 
 ---
 
@@ -208,12 +207,6 @@ See [`docs/self-hosted-security.md`](docs/self-hosted-security.md) for the threa
 | `THRESHOLD_HOURS` | Hours before a chat is considered forgotten | `3` |
 | `DASHBOARD_USER` | Bootstrap username on first run (if no users exist) | (none) |
 | `DASHBOARD_PASSWORD` | Bootstrap password on first run | (none) |
-| `NTFY_SERVER` | NTFY server URL | `https://ntfy.sh` |
-| `NTFY_TOPIC` | NTFY topic to publish to | (none) |
-| `NTFY_PRIORITY` | NTFY message priority | `3` |
-| `GOTIFY_URL` | Gotify server URL | (none) |
-| `GOTIFY_TOKEN` | Gotify app token | (none) |
-| `GOTIFY_PRIORITY` | Gotify message priority | `5` |
 | `VAPID_PUBLIC_KEY` | Web Push VAPID public key (see below) | (none) |
 | `VAPID_PRIVATE_KEY` | Web Push VAPID private key | (none) |
 | `VAPID_SUBJECT` | Contact URI for VAPID (`mailto:` or `https:`) | `mailto:respondr@example.com` |
@@ -236,19 +229,6 @@ See [`docs/self-hosted-security.md`](docs/self-hosted-security.md) for the threa
 5. Use **Test Web Push** to verify OS notifications arrive when the app is in the background.
 
 On iOS, Web Push requires iOS 16.4+ and the app must be opened from the home screen (standalone mode), not Safari.
-
-### NTFY setup
-
-1. Install the NTFY app on your phone.
-2. Pick a unique topic name, e.g. `respondr-alerts-yourname`.
-3. Subscribe to that topic in the app.
-4. Set `NTFY_TOPIC=respondr-alerts-yourname` in `.env`.
-
-### Gotify setup
-
-1. Run your own Gotify server (or use an existing one).
-2. Create an app and copy the token.
-3. Set `GOTIFY_URL` and `GOTIFY_TOKEN` in `.env`.
 
 ---
 

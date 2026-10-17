@@ -37,3 +37,6 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 -- Tables from earlier versions that nothing reads any more.
 DROP TABLE IF EXISTS ignored_chats;
 DROP TABLE IF EXISTS scan_locks;
+
+-- NTFY and Gotify were removed; drop their settings (including the Gotify token).
+DELETE FROM settings WHERE key LIKE 'ntfy\_%' ESCAPE '\' OR key LIKE 'gotify\_%' ESCAPE '\';

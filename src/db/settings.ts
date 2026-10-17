@@ -26,10 +26,18 @@ export function get(key: string): string | undefined {
 }
 
 export function set(key: string, value: string | number): void {
+  setMany([[key, value]]);
+}
+
+/** Write several settings in one transaction: all of them persist or none do. */
+export function setMany(entries: Array<[key: string, value: string | number]>): void {
   const db = getDb();
-  db.prepare(
+  const upsert = db.prepare(
     'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
-  ).run(key, String(value));
+  );
+  db.transaction(() => {
+    for (const [key, value] of entries) upsert.run(key, String(value));
+  })();
 }
 
 export function has(key: string): boolean {

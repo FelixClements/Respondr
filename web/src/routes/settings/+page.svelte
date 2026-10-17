@@ -31,7 +31,7 @@
     />
     <SettingsRow
       rowTitle="Notifications"
-      subtitle="NTFY, Gotify, Web Push"
+      subtitle="Web Push"
       icon="notifications"
       onClick={() => goto('/settings/notifications')}
     />
