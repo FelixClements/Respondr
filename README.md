@@ -78,7 +78,7 @@ These shots use sample conversations so the layout is visible without a live Wha
 
 This is the supported way to run Respondr 24/7 on a machine you control (home Linux box, NAS with Docker, or a small VPS on your LAN). Docker Compose builds the image, runs Chromium, persists the WhatsApp session, and restarts the container after reboot.
 
-Compose defaults `NODE_ENV` to `production` (override it only if you mean to). Production **will not start** with `http://192.168.x.x:9595`. Put TLS in front (Caddy, nginx, or Traefik) and set `BETTER_AUTH_URL` to that `https://` origin. Do not publish port 9595 to the public internet.
+Compose always runs with `NODE_ENV=production`. Production **will not start** with `http://192.168.x.x:9595`. Put TLS in front (Caddy, nginx, or Traefik) and set `BETTER_AUTH_URL` to that `https://` origin. Do not publish port 9595 to the public internet.
 
 Full operator notes: [`docs/self-hosted-security.md`](docs/self-hosted-security.md).
 
@@ -195,16 +195,13 @@ See [`docs/self-hosted-security.md`](docs/self-hosted-security.md) for the threa
 
 | Variable | Description | Default |
 |---|---|---|
-| `NODE_ENV` | Runtime environment (`production` enforces HTTPS URL + secret checks). Compose forces `production`. | `development` |
+| `NODE_ENV` | Runtime environment (`production` enforces HTTPS URL + secret checks). Compose always sets `production`. | `development` |
 | `PORT` | Web server port | `9595` |
 | `HOST` | Listen address (`127.0.0.1` in development, `0.0.0.0` in production) | (see description) |
-| `TRUST_PROXY` | Set `true` behind Caddy/nginx/Traefik so rate limits use `X-Forwarded-For` | (off) |
+| `TRUST_PROXY` | Set `true` behind Caddy/nginx/Traefik so rate limits use `X-Forwarded-For`. Leave off if clients can reach port 9595 directly. | (off) |
 | `BETTER_AUTH_URL` | Public URL of the app (must be `https://` in production) | `http://localhost:9595` |
 | `BETTER_AUTH_SECRET` | Auth signing secret (≥32 chars, required in production) | dev fallback in development only |
 | `SETUP_TOKEN` | Token required for HTTP `/setup` when not bound to loopback (optional if using `DASHBOARD_*`) | (none) |
-| `SCAN_INTERVAL_MINUTES` | Minutes between automatic scans | `30` |
-| `CHAT_LIMIT` | Number of recent chats to check | `50` |
-| `THRESHOLD_HOURS` | Hours before a chat is considered forgotten | `3` |
 | `DASHBOARD_USER` | Bootstrap username on first run (if no users exist) | (none) |
 | `DASHBOARD_PASSWORD` | Bootstrap password on first run | (none) |
 | `VAPID_PUBLIC_KEY` | Web Push VAPID public key (see below) | (none) |
