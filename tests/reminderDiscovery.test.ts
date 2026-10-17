@@ -82,4 +82,18 @@ describe('reminderDiscovery', () => {
     expect(result.forgotten).toHaveLength(1);
     expect(result.forgotten[0].id).toBe('1');
   });
+
+  it('reopens a done chat when the new message only has a seconds timestamp', () => {
+    const doneAt = 1000 * 1000 - 60_000;
+    const context = buildDiscoveryContext([{ id: '1', state: 'done', until: null, created_at: doneAt }]);
+    const chat: RawChat = {
+      ...baseChat,
+      lastMessage: { ...baseChat.lastMessage!, timestampMs: 0, timestamp: 1000 }
+    };
+    const result = discoverReminders([chat], 3, context, now);
+    expect(result.resetDoneIds).toEqual(['1']);
+    expect(result.forgotten).toEqual([
+      { id: '1', name: 'Alice', lastMessageAt: 1000 * 1000, hoursSince: 4 }
+    ]);
+  });
 });

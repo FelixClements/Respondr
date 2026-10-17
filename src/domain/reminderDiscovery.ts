@@ -5,6 +5,13 @@ export function hoursSince(timestampMs: number | null | undefined, now = Date.no
   return Number(((now - timestampMs) / (1000 * 60 * 60)).toFixed(1));
 }
 
+/** Last message time in ms. The scraper fills `timestampMs`; `timestamp` (seconds) is the fallback. */
+export function lastMessageAt(chat: RawChat): number {
+  const message = chat.lastMessage;
+  if (!message) return 0;
+  return message.timestampMs || (message.timestamp ?? 0) * 1000 || 0;
+}
+
 export function isEligibleForReminder(
   chat: RawChat | null | undefined,
   thresholdHours: number,
@@ -14,7 +21,7 @@ export function isEligibleForReminder(
   if (!chat.lastMessage) return false;
   if (chat.lastMessage.fromMe || chat.lastMessage.hasReactionFromMe) return false;
 
-  const lastTs = chat.lastMessage.timestampMs || chat.lastMessage.timestamp * 1000;
+  const lastTs = lastMessageAt(chat);
   if (!lastTs || !Number.isFinite(lastTs)) return false;
 
   return (now - lastTs) / (1000 * 60 * 60) > thresholdHours;
@@ -95,8 +102,7 @@ export function discoverReminders(
 
     const doneState = context.doneById.get(chat.id);
     if (doneState) {
-      const lastMessageAt = chat.lastMessage?.timestampMs || 0;
-      if (shouldResetDoneState(doneState, lastMessageAt, now)) {
+      if (shouldResetDoneState(doneState, lastMessageAt(chat), now)) {
         resetDoneIds.push(chat.id);
       } else {
         continue;
@@ -105,13 +111,12 @@ export function discoverReminders(
 
     if (!isEligibleForReminder(chat, thresholdHours, now)) continue;
 
-    const lastMessageAt =
-      chat.lastMessage!.timestampMs || chat.lastMessage!.timestamp * 1000;
+    const lastTs = lastMessageAt(chat);
     forgotten.push({
       id: chat.id,
       name: chat.name,
-      lastMessageAt,
-      hoursSince: hoursSince(lastMessageAt, now)
+      lastMessageAt: lastTs,
+      hoursSince: hoursSince(lastTs, now)
     });
   }
 
@@ -124,7 +129,7 @@ export function enrichChat(
   thresholdHours: number,
   now = Date.now()
 ) {
-  const lastTs = chat.lastMessage?.timestampMs || (chat.lastMessage?.timestamp ?? 0) * 1000 || 0;
+  const lastTs = lastMessageAt(chat);
   const elapsed = lastTs ? hoursSince(lastTs, now) : null;
   const eligible = isEligibleForReminder(chat, thresholdHours, now);
   let suppressed = false;

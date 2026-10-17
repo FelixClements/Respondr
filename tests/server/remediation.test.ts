@@ -19,17 +19,15 @@ const validKeys = { p256dh: 'A'.repeat(87), auth: 'B'.repeat(22) };
 
 function stubServices() {
   return createAppServices({
-    chatSource: { getRecentChats: async () => [] },
-    whatsapp: {
-      getStatus: () => ({ status: 'ready', isReady: true }),
-      getHealth: () => ({
-        whatsapp: { ok: true, detail: 'connected' },
-        puppeteer: { ok: true, detail: 'connected' },
-        chrome: { ok: true, detail: 'pid 1' }
-      }),
-      restartClient: async () => undefined,
-      getQrDataUrl: () => null
-    }
+    getRecentChats: async () => [],
+    getStatus: () => ({ status: 'ready', isReady: true, reconnectAt: null }),
+    getHealth: () => ({
+      whatsapp: { ok: true, detail: 'connected' },
+      puppeteer: { ok: true, detail: 'connected' },
+      chrome: { ok: true, detail: 'pid 1' }
+    }),
+    reconnect: async () => undefined,
+    getQrDataUrl: () => null
   } as never);
 }
 
