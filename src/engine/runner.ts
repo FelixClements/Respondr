@@ -53,5 +53,6 @@ export async function runOnce() {
   }
 
   historyDb.logScan(runAt, totalChecked, remindersSent, error);
+  historyDb.pruneHistory(runAt);
   return { runAt, totalChecked, remindersSent, error };
 }

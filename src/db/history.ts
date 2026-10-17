@@ -22,6 +22,18 @@ export function logScan(
   ).run(runAt, chatsChecked, remindersSent, error);
 }
 
+/** How long reminder and scan history is kept. Reminders repeat every scan, so this grows fast. */
+export const HISTORY_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+
+export function pruneHistory(now = Date.now()): void {
+  const cutoff = now - HISTORY_RETENTION_MS;
+  const db = getDb();
+  db.transaction(() => {
+    db.prepare('DELETE FROM reminders WHERE sent_at < ?').run(cutoff);
+    db.prepare('DELETE FROM scan_logs WHERE run_at < ?').run(cutoff);
+  })();
+}
+
 export function getRecentReminders(limit = 50): ReminderRow[] {
   const db = getDb();
   return db.prepare('SELECT * FROM reminders ORDER BY sent_at DESC LIMIT ?').all(limit) as ReminderRow[];
