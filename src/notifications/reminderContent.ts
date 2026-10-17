@@ -8,7 +8,10 @@ export function buildReminderPayload(chat: ForgottenChat): NotificationPayload {
     title: 'Respondr reminder',
     body: `${chat.name}: no reply for ${hours} hours`,
     url: '/',
-    icon: '/icon-192.png'
+    icon: '/icon-192.png',
+    // One tag per chat: a repeat reminder replaces that chat's previous one
+    // instead of hiding reminders for other chats.
+    tag: `respondr-reminder-${chat.id}`
   };
 }
 
@@ -17,6 +20,7 @@ export function buildTestPayload(title: string, body: string): NotificationPaylo
     title,
     body,
     url: '/',
-    icon: '/icon-192.png'
+    icon: '/icon-192.png',
+    tag: 'respondr-test'
   };
 }

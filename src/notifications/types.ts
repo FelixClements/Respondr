@@ -3,6 +3,8 @@ export interface NotificationPayload {
   body: string;
   url: string;
   icon: string;
+  /** Notifications with the same tag replace each other on the device. */
+  tag: string;
 }
 
 export interface PushResult {

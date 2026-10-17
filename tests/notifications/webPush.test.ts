@@ -16,7 +16,7 @@ vi.mock('web-push', () => ({
 
 const { initWebPush, sendPush } = await import('../../src/notifications/webPush.js');
 
-const payload = { title: 'T', body: 'B', url: '/', icon: '/icon.png' };
+const payload = { title: 'T', body: 'B', url: '/', icon: '/icon.png', tag: 't' };
 const keys = { p256dh: 'A'.repeat(87), auth: 'B'.repeat(22) };
 const endpoint = (n: number) => `https://updates.push.services.mozilla.com/device${n}`;
 
