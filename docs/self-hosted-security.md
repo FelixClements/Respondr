@@ -25,10 +25,8 @@ Assume attackers can reach your HTTP port. Assume they will probe `/api/auth-sta
 | Signup lockdown | `disableSignUp: true`, `/sign-up/email` and `/is-username-available` disabled, database hook rejects a second user |
 | Password policy | Minimum 8 characters |
 | Rate limits | `POST /api/setup`: 5 / 15 min / IP; `POST /api/auth/sign-in*`: 10 / 15 min / IP; `GET /api/auth-status`: 30 / min / IP (requires `TRUST_PROXY=true` behind a reverse proxy to trust `X-Forwarded-For`) |
-| Outbound webhooks | Gotify/NTFY URLs must be `http`/`https`. LAN and Docker DNS are allowed. Cloud metadata / link-local hosts are blocked. Requests do not follow redirects. |
 | Web Push endpoints | HTTPS only, hostname must be a known push provider (FCM, Mozilla, Apple, WNS) |
 | Security headers | `secureHeaders()` on all responses (nosniff, DENY framing, referrer policy, permissions policy) |
-| Gotify auth | Token sent in `X-Gotify-Key` header, not query string |
 | Docker defaults | `docker-compose.yml` sets `NODE_ENV=production` and requires `.env` (no placeholder secrets) |
 
 ## Remaining operator responsibilities

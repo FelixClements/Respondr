@@ -33,25 +33,8 @@ export function buildApiApp() {
     return c.json(result.data);
   });
 
-  app.get('/notifications', (c) => c.json(services.getNotifications()));
-  app.put('/notifications', async (c) => {
-    try {
-      return c.json(services.updateNotifications(await c.req.json()));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return c.json({ error: message }, 400);
-    }
-  });
-
   app.get('/history', (c) => c.json(services.getHistory()));
   app.get('/qr', (c) => c.json(services.getQr()));
-
-  app.post('/test-notification', async (c) => {
-    const body = await c.req.json().catch(() => ({}));
-    const title = (body as { title?: string }).title || 'Respondr test';
-    const message = (body as { message?: string }).message || 'Test notification from Respondr';
-    return c.json(await services.sendTestNotification(title, message));
-  });
 
   app.post('/run', async (c) => {
     const now = Date.now();

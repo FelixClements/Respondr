@@ -1,25 +1,15 @@
-import { seedNotificationSettingsFromEnv } from './settings.js';
-import { ntfyChannel } from './channels/ntfyChannel.js';
-import { gotifyChannel } from './channels/gotifyChannel.js';
-import { webPushChannel, initWebPush } from './channels/webPushChannel.js';
-import { createDispatcher } from './dispatcher.js';
-import { buildReminderPayload, buildTestPayload } from './reminderContent.js';
-import type { ForgottenChat, DeliveryReport } from './types.js';
-
-const dispatcher = createDispatcher([ntfyChannel, gotifyChannel, webPushChannel]);
+import * as logger from '../lib/logger.js';
+import type { ForgottenChat } from '../types.js';
+import { initWebPush, sendPush } from './webPush.js';
+import { buildReminderPayload } from './reminderContent.js';
 
 export function initNotifications(): void {
-  seedNotificationSettingsFromEnv();
   initWebPush();
 }
 
 export async function sendReminder(chat: ForgottenChat): Promise<void> {
-  const payload = buildReminderPayload(chat);
-  await dispatcher.dispatchReminder(payload);
+  const result = await sendPush(buildReminderPayload(chat));
+  if (result.status === 'failed') {
+    logger.error(`Web Push reminder failed: ${result.error || 'unknown'}`);
+  }
 }
-
-export async function sendTest(title: string, body: string): Promise<DeliveryReport> {
-  return dispatcher.dispatch(buildTestPayload(title, body));
-}
-
-export type { DeliveryReport };

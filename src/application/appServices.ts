@@ -4,10 +4,9 @@ import * as historyDb from '../db/history.js';
 import * as pushSubscriptionsDb from '../db/pushSubscriptions.js';
 import * as reminderDiscovery from '../domain/reminderDiscovery.js';
 import { runOnce } from '../engine/runner.js';
-import { sendTest } from '../notifications/index.js';
-import { getNotificationSettings, updateNotificationSettings } from '../notifications/settings.js';
-import { webPushChannel, getVapidPublicKey } from '../notifications/channels/webPushChannel.js';
-import { checkPushEndpoint, checkPushKeys } from '../lib/outboundUrl.js';
+import { sendPush, getVapidPublicKey } from '../notifications/webPush.js';
+import { buildTestPayload } from '../notifications/reminderContent.js';
+import { checkPushEndpoint, checkPushKeys } from '../lib/pushValidation.js';
 import * as scheduler from '../scheduler.js';
 import * as logger from '../lib/logger.js';
 import { createGuard } from '../lib/guard.js';
@@ -181,14 +180,6 @@ export function createAppServices(deps: AppDeps) {
       return { data: filterCoreSettings(settingsDb.getAll()), status: 200 as const };
     },
 
-    getNotifications() {
-      return getNotificationSettings();
-    },
-
-    updateNotifications(body: unknown) {
-      return updateNotificationSettings(body);
-    },
-
     getHistory() {
       return {
         reminders: historyDb.getRecentReminders(50),
@@ -198,11 +189,6 @@ export function createAppServices(deps: AppDeps) {
 
     getQr() {
       return { status: whatsapp.getStatus(), qr: whatsapp.getQrDataUrl() };
-    },
-
-    async sendTestNotification(title: string, message: string) {
-      const results = await sendTest(title, message);
-      return { ok: results.anySent, results };
     },
 
     runScan: runOnce,
@@ -269,12 +255,7 @@ export function createAppServices(deps: AppDeps) {
     },
 
     async testPush() {
-      const result = await webPushChannel.send({
-        title: 'Respondr test',
-        body: 'Push notifications are working',
-        url: '/',
-        icon: '/icon-192.png'
-      });
+      const result = await sendPush(buildTestPayload('Respondr test', 'Push notifications are working'));
       const ok = result.status === 'sent';
       return { ok, result };
     },
