@@ -1,6 +1,6 @@
 /**
- * Single-flight in-process guard for the scan and reconnect paths, with a
- * timeout so a stuck holder cannot block forever.
+ * Single-flight in-process guard for the scan path, with a timeout so a stuck
+ * holder cannot block forever.
  */
 export interface Guard {
   tryAcquire(): boolean;

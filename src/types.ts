@@ -61,6 +61,8 @@ export interface ForgottenChat {
 export interface WhatsAppStatus {
   status: string;
   isReady: boolean;
+  /** When the next automatic reconnect attempt runs (epoch ms), or null. */
+  reconnectAt: number | null;
 }
 
 export interface HealthCheck {

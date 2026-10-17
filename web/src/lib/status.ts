@@ -1,19 +1,28 @@
 import { api } from './api.js';
 
-export interface StatusData {
+export interface WhatsAppStatus {
   status: string;
   isReady: boolean;
-  health: {
-    whatsapp: { ok: boolean; detail: string };
-    puppeteer: { ok: boolean; detail: string };
-    chrome: { ok: boolean; detail: string };
-  };
-  nextScan: string | null;
-  settings: Record<string, string>;
+  /** Next automatic reconnect attempt (epoch ms), or null. */
+  reconnectAt: number | null;
 }
 
-export async function fetchStatus(): Promise<StatusData> {
-  return api.get<StatusData>('/status');
+/** How often pages poll while WhatsApp is not connected. */
+export const STATUS_POLL_MS = 3000;
+
+export async function fetchWhatsAppStatus(): Promise<WhatsAppStatus> {
+  const { status, isReady, reconnectAt } = await api.get<WhatsAppStatus>('/status');
+  return { status, isReady, reconnectAt };
+}
+
+/** A QR scan, not a restart, is what fixes `awaiting_qr`. */
+export function canReconnect(s: WhatsAppStatus): boolean {
+  return !s.isReady && s.status !== 'awaiting_qr';
+}
+
+/** Starts a restart in the background; poll status for the outcome. */
+export async function requestReconnect(): Promise<void> {
+  await api.post('/reconnect');
 }
 
 function pad(value: number): string {
