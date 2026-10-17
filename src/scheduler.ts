@@ -1,48 +1,39 @@
-import { schedule, validate } from 'node-cron';
 import { runOnce } from './engine/runner.js';
 import * as settingsDb from './db/settings.js';
 import * as logger from './lib/logger.js';
 
-let task: ReturnType<typeof schedule> | null = null;
-
-function buildExpression(minutes: number): string {
-  return `*/${minutes} * * * *`;
-}
+// A plain timer, not cron: `*/45 * * * *` would fire at :00 and :45, giving
+// gaps of 45 then 15 minutes. Overlapping runs are rejected by the scan guard.
+let timer: ReturnType<typeof setTimeout> | null = null;
+let nextRunAt: Date | null = null;
 
 export function start(): void {
-  if (task) {
-    task.destroy();
-    task = null;
-  }
-
+  stop();
   const minutes = settingsDb.parseIntervalMinutes(undefined);
-  const expression = buildExpression(minutes);
+  const intervalMs = minutes * 60_000;
 
-  if (!validate(expression)) {
-    throw new Error(`Invalid cron expression: ${expression}`);
-  }
-
-  task = schedule(
-    expression,
-    async () => {
+  const scheduleNext = () => {
+    nextRunAt = new Date(Date.now() + intervalMs);
+    timer = setTimeout(() => {
+      // Queue the next run first so a slow scan does not push the schedule back.
+      scheduleNext();
       logger.debug('Scheduled scan triggered');
-      await runOnce();
-    },
-    { noOverlap: true }
-  );
+      void runOnce();
+    }, intervalMs);
+  };
 
-  logger.info(`Scheduler started with expression: ${expression}`);
+  scheduleNext();
+  logger.info(`Scheduler started: scanning every ${minutes} minutes`);
 }
 
 export function stop(): void {
-  if (task) {
-    task.destroy();
-    task = null;
-  }
+  if (timer) clearTimeout(timer);
+  timer = null;
+  nextRunAt = null;
 }
 
 export function getNextRunAt(): Date | null {
-  return task ? task.getNextRun() : null;
+  return nextRunAt;
 }
 
 export function reschedule(): void {
