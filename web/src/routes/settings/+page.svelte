@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { Page, List } from 'konsta/svelte';
   import MdNavbar from '$lib/components/md/MdNavbar.svelte';
@@ -6,6 +7,7 @@
   import SettingsRow from '$lib/components/md/SettingsRow.svelte';
   import { settingsListClass } from '$lib/uiSpacing';
   import { authClient } from '$lib/auth-client';
+  import { fetchWhatsAppStatus, statusLabel } from '$lib/status';
 
   const session = authClient.useSession();
 
@@ -13,6 +15,16 @@
     await authClient.signOut();
     goto('/login');
   }
+
+  let whatsappSubtitle = $state('Connection and linking');
+
+  onMount(async () => {
+    try {
+      whatsappSubtitle = statusLabel((await fetchWhatsAppStatus()).status);
+    } catch {
+      // Keep the generic subtitle; the WhatsApp page shows the error.
+    }
+  });
 
   const email = $derived($session.data?.user?.email || $session.data?.user?.name || 'Dashboard');
 </script>
@@ -36,8 +48,8 @@
       onClick={() => goto('/settings/notifications')}
     />
     <SettingsRow
-      rowTitle="Link WhatsApp"
-      subtitle="Desktop linking steps"
+      rowTitle="WhatsApp"
+      subtitle={whatsappSubtitle}
       icon="link"
       onClick={() => goto('/settings/link')}
     />
@@ -52,12 +64,6 @@
       subtitle="Recent server logs"
       icon="article"
       onClick={() => goto('/settings/logs')}
-    />
-    <SettingsRow
-      rowTitle="QR Code"
-      subtitle="Desktop only"
-      icon="qr_code"
-      onClick={() => goto('/qr')}
     />
     <SettingsRow rowTitle="Log out" icon="logout" destructive onClick={logout} />
   </List>

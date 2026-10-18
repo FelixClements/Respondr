@@ -58,7 +58,7 @@ body {
 }
 
 /* Konsta Page defaults to absolute + h-full, which stretches navbar backgrounds. */
-:global(.md-page.k-page) {
+.md-page.k-page {
   position: relative !important;
   height: auto !important;
   min-height: 0 !important;

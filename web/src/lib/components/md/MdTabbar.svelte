@@ -16,12 +16,12 @@
       href: '/settings',
       label: 'Settings',
       icon: 'settings',
-      match: (path: string) => path.startsWith('/settings') || path === '/qr'
+      match: (path: string) => path.startsWith('/settings')
     }
   ] as const;
 </script>
 
-<Tabbar labels icons class="left-0 bottom-0 fixed safe-areas z-30">
+<Tabbar labels icons class="fixed bottom-0 left-0 right-0 mx-auto max-w-2xl safe-areas z-30">
   {#each tabs as tab}
     {@const active = tab.match($page.url.pathname)}
     <TabbarLink active={active} onclick={() => goto(tab.href)} label={tab.label}>

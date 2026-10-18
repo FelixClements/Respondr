@@ -61,7 +61,7 @@ These shots use sample conversations so the layout is visible without a live Wha
                              └──► [ Web Push ]
 ```
 
-1. **Authentication:** The server starts a headless Chromium instance. On a computer, open **Settings → QR Code** (or `/qr`) and scan it from WhatsApp → Linked devices → Link a device. On a phone, **Settings → Link WhatsApp** lists those same steps.
+1. **Authentication:** The server starts a headless Chromium instance. Open **Settings → WhatsApp** on a computer and scan the code from WhatsApp → Linked devices → Link a device.
 2. **Analysis loop:** Every scan interval (counted from startup or the last settings change), Respondr sweeps the most recent chats. Each run also pings the session so the link stays up.
 3. **Logic assessment:** If the contact sent the last message, you have not reacted to it, the chat is not done or ignored, and the message is older than the threshold, Respondr queues a reminder.
 4. **Outbound notification:** The reminder goes out as a Web Push notification to every device that enabled push. Respondr does not send a WhatsApp message.
@@ -164,7 +164,7 @@ The container is healthy when logs show the Hono server listening and Better Aut
 
 1. Visit `https://respondr.example.com` (or your LAN hostname).
 2. Sign in with `DASHBOARD_USER` / `DASHBOARD_PASSWORD` (or finish `/setup` if you used `SETUP_TOKEN`).
-3. Open **Settings → QR Code** and scan it from WhatsApp on your phone (Linked devices → Link a device).
+3. Open **Settings → WhatsApp** and scan the code from WhatsApp on your phone (Linked devices → Link a device).
 4. Keep the server running. The session is stored in the `respondr_wwebjs_auth` volume; the SQLite database is in `respondr_data`.
 
 ### 5. Day-to-day operations
