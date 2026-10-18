@@ -36,7 +36,8 @@
 <style>
   .md-fab {
     position: fixed;
-    right: 1rem;
+    /* 1rem from the right edge of the centered app column (max-w-2xl = 42rem). */
+    right: max(1rem, calc((100vw - 42rem) / 2 + 1rem));
     /* Tab bar is 5rem. Keep a 1rem gap so the button does not sit on it. */
     bottom: calc(6rem + env(safe-area-inset-bottom));
     z-index: 25;

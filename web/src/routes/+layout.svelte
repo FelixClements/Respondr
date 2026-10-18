@@ -47,7 +47,10 @@
 
 <KonstaProvider theme="material" materialTouchRipple {dark}>
   <div class="k-material k-md-vibrant md-app bg-md-light-surface-container-lowest dark:bg-md-dark-surface-container-lowest min-h-screen">
-    <div class="pb-tabbar">
+    <!-- Phone-first UI: on wider screens keep it in a centered column. -->
+    <div
+      class="pb-tabbar mx-auto w-full max-w-2xl min-h-screen lg:border-x lg:border-md-light-outline-variant/30 lg:dark:border-md-dark-outline-variant/30"
+    >
       {@render children()}
     </div>
     <InstallBanner />
