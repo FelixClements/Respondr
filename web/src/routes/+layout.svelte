@@ -42,6 +42,7 @@
 </script>
 
 <svelte:head>
+  <title>Respondr</title>
   {@html webManifest}
 </svelte:head>
 
